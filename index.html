@@ -1,0 +1,2295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>骰子英雄 · 150+ AI 演示</title>
+<style>
+/* ============================================================================
+ * 骰子英雄 · 样式（视觉风格沿用原版 index.html，新增起始界面/AI 横幅/结算）
+ * ==========================================================================*/
+:root {
+  --bg: #252540;
+  --panel-bg: #1e2a40;
+  --card-bg: #1a3250;
+  --gold: #f0c040;
+  --score-green: #2d7d3a;
+  --score-green-light: #4caf50;
+  --red-resource: #f4a4a4;
+  --blue-resource: #3050a0;
+  --text: #e0e0e0;
+  --border: #3a3a5c;
+  --ai-cyan: #35d0d0;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh;
+  display: flex; justify-content: center; align-items: flex-start;
+  padding: 10px; user-select: none;
+}
+.hidden { display: none !important; }
+button { font-family: inherit; }
+
+/* ---------------- 起始界面 ---------------- */
+.menu-screen { width: 100%; display: flex; justify-content: center; padding-top: 3vh; }
+.menu-card {
+  max-width: 860px; width: 100%; background: var(--panel-bg);
+  border: 1px solid var(--border); border-radius: 18px; padding: 26px 30px 30px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+}
+.menu-card h1 { font-size: 2.2em; text-align: center; letter-spacing: 3px; color: #fff; }
+.subtitle { text-align: center; margin-top: 8px; color: #9fb3c8; font-size: 0.98em; }
+.subtitle b { color: var(--ai-cyan); }
+.menu-modes { display: flex; gap: 18px; margin: 26px 0 18px; flex-wrap: wrap; }
+.mode-card {
+  flex: 1 1 300px; background: var(--card-bg); border: 2px solid transparent;
+  border-radius: 14px; padding: 22px 20px; cursor: pointer; color: var(--text);
+  text-align: left; transition: all 0.18s;
+}
+.mode-card:hover { border-color: var(--ai-cyan); transform: translateY(-3px); background: #1f3f66; }
+.mode-icon { font-size: 2.2em; }
+.mode-title { font-size: 1.35em; font-weight: bold; color: #fff; margin: 6px 0 6px; }
+.mode-desc { font-size: 0.9em; color: #a8bccf; line-height: 1.55; }
+.menu-extra { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.offline-note {
+  margin: 0 0 14px; padding: 8px 14px; border-radius: 10px; text-align: center;
+  background: #16233a; border: 1px solid var(--border); color: #9fd8e0; font-size: 0.88em;
+}
+.mode-card.disabled-mode {
+  opacity: 0.45; cursor: not-allowed; border-color: #445; background: #1a2436;
+}
+.mode-card.disabled-mode:hover { transform: none; border-color: #445; background: #1a2436; }
+.ghost-btn {
+  background: transparent; border: 1px solid var(--border); color: #b9cde0;
+  padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 0.92em;
+}
+.ghost-btn:hover { border-color: var(--ai-cyan); color: #fff; }
+.explain-box {
+  margin-top: 18px; background: #16233a; border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 20px; font-size: 0.92em; line-height: 1.7;
+}
+.explain-box h3 { margin-bottom: 8px; color: var(--ai-cyan); }
+.explain-box ul { padding-left: 20px; }
+.explain-box li { margin-bottom: 5px; }
+.explain-box code { background: #0f1a2c; padding: 1px 6px; border-radius: 4px; color: var(--gold); }
+
+/* ---------------- 游戏界面 ---------------- */
+.game-container {
+  max-width: 1100px; width: 100%; display: flex; flex-direction: column; gap: 10px;
+}
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: 8px; background: var(--panel-bg); border-radius: 12px; padding: 12px 18px;
+  border: 1px solid var(--border);
+}
+.turn-info { font-size: 1.25em; font-weight: bold; color: #fff; white-space: nowrap; }
+.phase-badge {
+  background: #e67e22; color: #fff; padding: 5px 14px; border-radius: 20px;
+  font-weight: bold; font-size: 0.95em; white-space: nowrap;
+}
+.score-display { font-size: 1.3em; font-weight: bold; color: var(--score-green-light); white-space: nowrap; }
+.quit-btn {
+  background: #3a4a63; color: #dfe9f3; border: none; border-radius: 18px;
+  padding: 7px 14px; cursor: pointer; font-size: 0.88em;
+}
+.quit-btn:hover { background: #4d6183; }
+
+.resources-panel {
+  display: flex; flex-wrap: wrap; gap: 10px; background: var(--panel-bg);
+  border-radius: 12px; padding: 12px 18px; border: 1px solid var(--border); align-items: center;
+}
+.resource-item { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 0.95em; }
+.resource-red { background: #5c2020; color: #f4a4a4; }
+.resource-blue { background: #1a2a50; color: #8098e0; }
+.resource-coin { background: #4a3800; color: #f0c040; }
+.resource-hammer { background: #3a3040; color: #c0a0d0; }
+.resource-cap { font-size: 0.8em; opacity: 0.8; }
+.resource-value { font-size: 1.15em; min-width: 20px; text-align: center; }
+
+.dice-area { display: flex; gap: 16px; flex-wrap: wrap; }
+.dice-column {
+  flex: 1; min-width: 280px; background: var(--panel-bg); border-radius: 12px;
+  padding: 14px; border: 1px solid var(--border);
+}
+.dice-column h3 { text-align: center; margin-bottom: 8px; font-size: 1.05em; letter-spacing: 2px; }
+.dice-faces { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.dice-face-wrapper { position: relative; cursor: pointer; transition: transform 0.15s; }
+.dice-face-wrapper:hover { transform: scale(1.06); }
+.dice-face-wrapper.rolled {
+  outline: 3px solid #e74c3c; outline-offset: 3px; border-radius: 8px;
+  animation: pulse-red 0.35s ease-in-out 3; z-index: 5;
+}
+@keyframes pulse-red {
+  0%, 100% { outline-color: #e74c3c; box-shadow: 0 0 8px 2px rgba(231,76,60,0.5); }
+  50% { outline-color: #ff6b6b; box-shadow: 0 0 20px 6px rgba(255,107,107,1); }
+}
+.dice-face-wrapper.selectable { outline: 3px dashed #ffeb3b; outline-offset: 3px; border-radius: 8px; }
+.face-circle {
+  width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-weight: bold; font-size: 1em; border: 2px solid rgba(255,255,255,0.3);
+  color: #000; text-align: center; line-height: 1.1;
+}
+.face-circle.small { width: 34px; height: 34px; font-size: 0.7em; border-width: 1.5px; }
+.face-circle.coin-face { background: var(--gold); border-color: #a07000; }
+.face-circle.score-face { background: var(--score-green); color: #fff; border-color: #1a5a20; }
+.face-circle.red-face { background: var(--red-resource); border-color: #b05050; }
+.face-circle.blue-face { background: var(--blue-resource); color: #fff; border-color: #1a3070; }
+.face-square {
+  width: 52px; height: 52px; border-radius: 8px; background: #111; color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: bold;
+  font-size: 1.25em; border: 2px solid #555; letter-spacing: 1px;
+}
+.face-multi { width: 52px; height: 52px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 2px; place-items: center; }
+.face-multi .face-circle.small { width: 22px; height: 22px; font-size: 0.55em; }
+
+.support-bar {
+  background: var(--panel-bg); border-radius: 10px; padding: 10px 16px;
+  border: 1px solid var(--border); text-align: center;
+}
+.select-hint {
+  background: #4a3800; color: var(--gold); border: 1px solid var(--gold);
+  border-radius: 10px; padding: 8px 14px; text-align: center; font-weight: bold;
+  animation: pulse-hint 1.2s ease-in-out infinite;
+}
+@keyframes pulse-hint { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.speed-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--panel-bg); border: 1px solid var(--border); border-radius: 10px;
+  padding: 8px 14px;
+}
+.speed-label { font-size: 0.88em; color: #9fb3c8; }
+.speed-btn {
+  background: #2b3d55; color: #cfe0f0; border: 1px solid #44608a; border-radius: 16px;
+  padding: 5px 14px; cursor: pointer; font-size: 0.88em;
+}
+.speed-btn:hover { background: #36506f; }
+.speed-btn.active { background: var(--ai-cyan); color: #06202a; border-color: var(--ai-cyan); font-weight: bold; }
+.speed-tip { font-size: 0.8em; color: #7d93a8; }
+/* 弹窗隐藏/恢复按钮（与原版一致） */
+.modal-hide-btn {
+  position: absolute; top: 8px; right: 12px; width: 34px; height: 34px;
+  border-radius: 50%; background: #556; color: #fff; display: flex; align-items: center;
+  justify-content: center; font-size: 1.4em; font-weight: bold; cursor: pointer; z-index: 10;
+}
+.modal-hide-btn:hover { background: #778; }
+.modal-restore-btn {
+  position: fixed; bottom: 18px; left: 18px; z-index: 650; background: #e67e22; color: #fff;
+  padding: 9px 16px; border-radius: 22px; font-weight: bold; cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5); font-size: 0.9em;
+}
+.modal-restore-btn:hover { background: #f39c12; }
+.log-panel { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.log-title { padding: 8px 16px; background: #17233a; font-weight: bold; font-size: 0.92em; color: #cfe0f0; }
+.log-body { max-height: 240px; overflow-y: auto; padding: 10px 16px; font-size: 0.88em; line-height: 1.65; }
+.log-body .turn-line { color: var(--gold); font-weight: bold; margin-top: 6px; }
+.log-body .ai-line { color: var(--ai-cyan); }
+
+/* ---------------- AI 决策横幅 ---------------- */
+.ai-banner {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 500;
+  display: flex; justify-content: center; pointer-events: none;
+}
+.ai-banner-inner {
+  width: min(1100px, 96vw); margin-bottom: 14px; padding: 14px 22px;
+  background: linear-gradient(90deg, rgba(20,40,60,0.97), rgba(16,52,66,0.97));
+  border: 2px solid var(--ai-cyan); border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.55);
+  animation: bannerIn 0.25s ease;
+}
+@keyframes bannerIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.ai-banner-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.ai-badge {
+  background: var(--ai-cyan); color: #06202a; font-weight: bold; font-size: 0.82em;
+  padding: 3px 10px; border-radius: 12px;
+}
+.ai-type { color: #9fe8f0; font-size: 0.9em; }
+.ai-action { font-size: 1.35em; font-weight: bold; color: #fff; letter-spacing: 1px; }
+.ai-detail { margin-top: 6px; font-size: 0.86em; color: #a9c8d8; line-height: 1.6; }
+.ai-detail b { color: var(--gold); }
+
+/* ---------------- 弹窗 ---------------- */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex;
+  align-items: center; justify-content: center; z-index: 600; padding: 12px;
+}
+.modal {
+  background: #243045; border-radius: 16px; padding: 20px 24px; max-width: 760px;
+  width: 96%; max-height: 86vh; overflow-y: auto; border: 2px solid #4a6a8a; color: var(--text);
+}
+.modal h3 { text-align: center; margin-bottom: 6px; color: #fff; font-size: 1.25em; }
+.modal .hint { text-align: center; font-size: 0.85em; color: #9fb3c8; margin-bottom: 12px; }
+.modal .choices { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.modal .choice-card {
+  background: var(--card-bg); border: 2px solid transparent; border-radius: 10px;
+  padding: 12px 16px; cursor: pointer; text-align: center; transition: all 0.18s; min-width: 84px;
+}
+.modal .choice-card:hover { border-color: var(--gold); background: #1a3a5a; }
+.modal .choice-card.disabled { opacity: 0.4; pointer-events: none; border-color: #555; background: #1e2a3a; }
+.modal .choice-card .big { font-size: 1.15em; font-weight: bold; }
+.modal .choice-card .sub { font-size: 0.78em; color: #a8bccf; margin-top: 4px; }
+.modal .close-btn {
+  display: block; margin: 14px auto 0; padding: 8px 28px; border-radius: 20px;
+  background: #556; color: #fff; border: none; cursor: pointer; font-size: 0.95em;
+}
+.modal .close-btn:hover { background: #778; }
+.modal .hero-card-item {
+  background: var(--card-bg); border-radius: 10px; padding: 10px 14px; cursor: pointer;
+  border: 2px solid transparent; transition: all 0.18s; display: flex; align-items: center;
+  gap: 12px; margin-bottom: 8px;
+}
+.modal .hero-card-item:hover { border-color: var(--gold); }
+.modal .hero-card-item.disabled { opacity: 0.4; pointer-events: none; border-color: #444; }
+.modal .hero-desc { font-size: 0.82em; color: #a0b0c0; margin-top: 2px; }
+.hammer-choices { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
+.hammer-choice-card {
+  background: var(--card-bg); border: 2px solid transparent; border-radius: 10px;
+  padding: 12px 18px; cursor: pointer; font-size: 1.1em; font-weight: bold; transition: all 0.18s;
+}
+.hammer-choice-card:hover { border-color: var(--gold); background: #1a3a5a; }
+.hammer-coin { color: var(--gold); }
+.hammer-hammer { color: #c0a0d0; }
+
+/* ---------------- 结算界面 ---------------- */
+.settle-screen { width: 100%; display: flex; justify-content: center; padding-top: 2vh; }
+.settle-card {
+  max-width: 820px; width: 100%; background: var(--panel-bg); border: 1px solid var(--border);
+  border-radius: 18px; padding: 26px 30px 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+}
+.settle-card h1 { text-align: center; color: #fff; letter-spacing: 2px; }
+.settle-score { text-align: center; font-size: 3.4em; font-weight: bold; color: var(--score-green-light); margin: 10px 0 4px; }
+.settle-score small { font-size: 0.32em; color: #9fb3c8; }
+.settle-formula { text-align: center; color: #a8bccf; margin-bottom: 16px; }
+.settle-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 12px; }
+.settle-heroes { text-align: center; margin-bottom: 8px; color: #cfe0f0; line-height: 1.8; }
+.settle-compare { text-align: center; margin: 14px 0 18px; color: #9fb3c8; font-size: 0.92em; line-height: 1.7; }
+.primary-btn {
+  display: block; margin: 0 auto; padding: 12px 34px; border-radius: 24px;
+  background: var(--ai-cyan); color: #06202a; border: none; font-size: 1.05em;
+  font-weight: bold; cursor: pointer;
+}
+.primary-btn:hover { background: #63e6e6; }
+
+/* ---------------- toast ---------------- */
+#toastContainer { position: fixed; top: 18px; right: 18px; z-index: 700; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.toast-item {
+  background: #2c3e50; color: #fff; padding: 10px 20px; border-radius: 22px;
+  font-weight: bold; font-size: 0.95em; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  animation: toastIn 0.25s ease, toastOut 0.3s ease 2.1s forwards;
+}
+@keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateX(40px); } }
+
+@media (max-width: 700px) {
+  .face-circle { width: 40px; height: 40px; font-size: 0.78em; }
+  .face-square, .face-multi { width: 40px; height: 40px; }
+  .ai-action { font-size: 1.08em; }
+  .dice-area { flex-direction: column; }
+  .menu-card h1 { font-size: 1.6em; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ==================== 起始界面：选择游玩方式 ==================== -->
+<div id="menuScreen" class="screen menu-screen">
+  <div class="menu-card">
+    <h1>🎲 骰子英雄</h1>
+    <p class="subtitle">双骰策略游戏 · 强化学习 AI v9（搜索自举训练，<b>搜索口径 150.9 分</b>）</p>
+
+    <div class="menu-modes">
+      <button class="mode-card" id="btnHuman">
+        <div class="mode-icon">🧑</div>
+        <div class="mode-title">人类游玩</div>
+        <div class="mode-desc">完整 9 回合，自己决策（商店 / 英雄 / 支援 / 三选一 / 锤子转化）</div>
+      </button>
+      <button class="mode-card" id="btnAI">
+        <div class="mode-icon">🤖</div>
+        <div class="mode-title">AI 演示</div>
+        <div class="mode-desc">全程 AI 决策，每步展示决策横幅并暂停 1.2 秒</div>
+      </button>
+    </div>
+
+    <div class="offline-note">📦 离线单文件版：模型与数据已内嵌，双击本文件即可运行（无需服务器）。</div>
+    <div class="menu-extra">
+      <button class="ghost-btn" id="btnExplain">📖 AI 与训练说明</button>
+      <button class="ghost-btn" id="btnCheck">🔍 引擎一致性自检</button>
+    </div>
+
+    <div id="explainBox" class="explain-box hidden">
+      <h3>这个 AI 是怎么来的</h3>
+      <ul>
+        <li><b>网络</b>：策略网 260→1024×3→94（约 246 万参数）+ 价值网 260→512×2→1（约 40 万参数）</li>
+        <li><b>训练</b>：搜索自举循环 —— 搜索智能体自对弈生成数据 → 行为克隆（BC）→ 价值网络重训 → 轻量 RL；
+          最终版本 v9 使用 50 局人类专家演示（均值 165.9）+ 3200 局自对弈数据</li>
+        <li><b>成绩</b>：搜索口径 <b>150.86</b>（525 局独立种子，标准误 0.74）；贪心口径 145.4（1000 局）；
+          人类专家 165.9；随机基线 38.8</li>
+        <li><b>推理</b>：模型权重 int8 量化（per-output-channel），网页加载时反量化为 float32 全精度推理</li>
+        <li><b>可复现</b>：每局的牌堆与投掷序列由离线端预生成（随机数流按序消费），
+          因此本页每一局的走法都与离线评估逐位一致</li>
+      </ul>
+    </div>
+
+    <div id="checkBox" class="explain-box hidden"></div>
+  </div>
+</div>
+
+<!-- ==================== 游戏界面 ==================== -->
+<div id="gameScreen" class="screen hidden">
+  <div class="game-container">
+    <div class="top-bar">
+      <span class="turn-info" id="turnInfo">📅 第 1/9 回合</span>
+      <span class="phase-badge" id="phaseBadge">🎲 掷骰</span>
+      <span class="score-display" id="scoreDisplay">⭐ 分数：0</span>
+      <button class="quit-btn" id="btnQuit">↩ 返回菜单</button>
+    </div>
+
+    <div class="resources-panel" id="resourcesPanel"></div>
+
+    <div class="dice-area">
+      <div class="dice-column">
+        <h3>🎲 左骰子</h3>
+        <div class="dice-faces" id="leftDiceFaces"></div>
+      </div>
+      <div class="dice-column">
+        <h3>🎲 右骰子</h3>
+        <div class="dice-faces" id="rightDiceFaces"></div>
+      </div>
+    </div>
+
+    <div class="support-bar" id="supportBar">🛡️ 可用支援能力：<b>无</b></div>
+
+    <div class="select-hint hidden" id="selectHint">👆 请在左右骰子上点击一个骰面</div>
+
+    <div class="speed-bar">
+      <span class="speed-label">演示速度</span>
+      <button class="speed-btn" id="spdSlow">🐢 慢</button>
+      <button class="speed-btn active" id="spdNormal">▶ 标准</button>
+      <button class="speed-btn" id="spdFast">🐇 快</button>
+      <span class="speed-tip">对人类游玩与 AI 演示都生效（人类掷骰 0.7 秒 / AI 决策 1.2 秒 × 倍率）</span>
+    </div>
+
+    <div class="log-panel">
+      <div class="log-title">📜 对局记录</div>
+      <div class="log-body" id="logBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== AI 决策横幅 ==================== -->
+<div id="aiBanner" class="ai-banner hidden">
+  <div class="ai-banner-inner">
+    <div class="ai-banner-head">
+      <span class="ai-badge">🤖 AI 决策</span>
+      <span class="ai-type" id="aiType">主要行动</span>
+    </div>
+    <div class="ai-action" id="aiAction">—</div>
+    <div class="ai-detail" id="aiDetail"></div>
+  </div>
+</div>
+
+<!-- ==================== 结算界面 ==================== -->
+<div id="settleScreen" class="screen settle-screen hidden">
+  <div class="settle-card">
+    <h1 id="settleTitle">🏁 终局结算</h1>
+    <div class="settle-score"><span id="settleTotal">0</span><small> 分</small></div>
+    <div class="settle-formula" id="settleFormula"></div>
+    <div class="settle-grid" id="settleGrid"></div>
+    <div class="settle-heroes" id="settleHeroes"></div>
+    <div class="settle-compare" id="settleCompare"></div>
+    <button class="primary-btn" id="btnBackMenu">↩ 回到初始界面</button>
+  </div>
+</div>
+
+<!-- ==================== 通用弹窗容器 ==================== -->
+<div id="modalContainer"></div>
+<div id="toastContainer"></div>
+
+<script src="bundle.js"></script>
+<script>
+/* ============================================================================
+ * 骰子英雄 · 游戏引擎（game.js）
+ * ---------------------------------------------------------------------------
+ * 本文件是 Python 版 game.py 的逐行 JavaScript 移植，用于在浏览器里完整复现
+ * 同一局游戏：相同的牌堆、相同的投掷、相同的决策点顺序与状态编码（260 维）。
+ *
+ * 关键约定（与 Python 版一致）：
+ *   - 随机性来自「预生成的随机数流」（DrawStream）：
+ *       Python 端把该局用到的 random()/integers()/shuffle() 调用按序录制，
+ *       网页端按同一顺序消费，因此不需要在 JS 里实现 numpy 的 PCG64。
+ *   - 快照/恢复（浅层搜索用）会同时保存「随机数流位置」。
+ *   - 决策接口是 async：agent.decide(vec, mask, game) 返回 Promise<全局动作编号 0..93>。
+ *     人类智能体会 await 玩家点击；AI 智能体立即 resolve。
+ * ==========================================================================*/
+
+/* ------------------------------ 常量表 ------------------------------ */
+
+const FACES = {
+  '1红':               { type: 'simple', effect: [1, 0, 0, 0] },
+  '1蓝':               { type: 'simple', effect: [0, 1, 0, 0] },
+  '2分':               { type: 'simple', effect: [0, 0, 0, 2] },
+  '1金币':             { type: 'simple', effect: [0, 0, 1, 0] },
+  '3金币':             { type: 'simple', effect: [0, 0, 3, 0] },
+  '1蓝色资源':         { type: 'simple', effect: [0, 1, 0, 0] },
+  '4金币':             { type: 'simple', effect: [0, 0, 4, 0] },
+  '1红色资源':         { type: 'simple', effect: [1, 0, 0, 0] },
+  '2分数+2金币':       { type: 'simple', effect: [0, 0, 2, 2] },
+  '2蓝色资源':         { type: 'simple', effect: [0, 2, 0, 0] },
+  '2红色资源':         { type: 'simple', effect: [2, 0, 0, 0] },
+  '4分':               { type: 'simple', effect: [0, 0, 0, 4] },
+  '6金币':             { type: 'simple', effect: [0, 0, 6, 0] },
+  '1红色资源+1分':     { type: 'simple', effect: [1, 0, 0, 1] },
+  '1蓝色资源+2金币':   { type: 'simple', effect: [0, 1, 2, 0] },
+  '三选一(1)':         { type: 'choice', options: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] },
+  '1红+1蓝+1分+1金币': { type: 'simple', effect: [1, 1, 1, 1] },
+  '2蓝+2分':           { type: 'simple', effect: [0, 2, 0, 2] },
+  '6分':               { type: 'simple', effect: [0, 0, 0, 6] },
+  '三选一(2)':         { type: 'choice', options: [[2, 0, 0], [0, 2, 0], [0, 0, 2]] },
+  '三倍':              { type: 'triple' },
+};
+
+const SHOP_ITEMS = [
+  { face: '3金币', price: 2, limited: false },
+  { face: '1蓝色资源', price: 2, limited: false },
+  { face: '4金币', price: 3, limited: false },
+  { face: '1红色资源', price: 3, limited: false },
+  { face: '2分数+2金币', price: 5, limited: false },
+  { face: '2蓝色资源', price: 6, limited: false },
+  { face: '2红色资源', price: 8, limited: false },
+  { face: '4分', price: 8, limited: false },
+  { face: '6金币', price: 4, limited: true },
+  { face: '1红色资源+1分', price: 4, limited: true },
+  { face: '1蓝色资源+2金币', price: 4, limited: true },
+  { face: '三选一(1)', price: 4, limited: true },
+  { face: '1红+1蓝+1分+1金币', price: 12, limited: true },
+  { face: '2蓝+2分', price: 12, limited: true },
+  { face: '6分', price: 12, limited: true },
+  { face: '三选一(2)', price: 12, limited: true },
+];
+
+const HEROES = [
+  { name: '长老', cost: { red: 1 }, score: 0, effect: 'support', id: 'elder' },
+  { name: '野灵', cost: { red: 1 }, score: 2, effect: 'immediate', id: 'wild_spirit' },
+  { name: '猫头鹰', cost: { red: 2 }, score: 4, effect: 'support', id: 'owl' },
+  { name: '米诺陶', cost: { red: 3 }, score: 11, effect: 'none', id: 'minotaur' },
+  { name: '戈尔贡', cost: { red: 4 }, score: 14, effect: 'none', id: 'gorgon' },
+  { name: '深渊之镜', cost: { red: 5 }, score: 16, effect: 'none', id: 'abyss' },
+  { name: '斯芬克斯', cost: { red: 6 }, score: 10, effect: 'immediate', id: 'sphinx' },
+  { name: '九头蛇', cost: { red: 5, blue: 5 }, score: 26, effect: 'none', id: 'hydra' },
+  { name: '巨蟹', cost: { blue: 6 }, score: 8, effect: 'immediate', id: 'crab' },
+  { name: '隐形头盔', cost: { blue: 5 }, score: 4, effect: 'immediate', id: 'helm' },
+  { name: '船夫', cost: { blue: 4 }, score: 12, effect: 'none', id: 'ferryman' },
+  { name: '萨提尔', cost: { blue: 3 }, score: 10, effect: 'none', id: 'satyr' },
+  { name: '银鹿', cost: { blue: 2 }, score: 2, effect: 'support', id: 'deer' },
+  { name: '宝箱', cost: { blue: 1 }, score: 2, effect: 'immediate', id: 'chest' },
+  { name: '锤子', cost: { blue: 1 }, score: 0, effect: 'immediate', id: 'hammer' },
+];
+const HERO_SCORE = {};
+HEROES.forEach(h => { HERO_SCORE[h.name] = h.score; });
+const SUPPORT_HEROES = ['长老', '银鹿', '猫头鹰'];
+
+const DECISION_TYPES = ['choice', 'hammer', 'support', 'die', 'owl',
+                        'main', 'shop_item', 'shop_place', 'hero', 'extra', 'helm'];
+const TYPE_SEGMENTS = [['choice', 3], ['hammer', 19], ['support', 4], ['die', 2], ['owl', 3],
+                       ['main', 3], ['shop_item', 17], ['shop_place', 12], ['hero', 16],
+                       ['extra', 3], ['helm', 12]];
+const N_ACTIONS = 94;
+const SEG_OFFSET = {};
+{
+  let off = 0;
+  for (const [name, size] of TYPE_SEGMENTS) { SEG_OFFSET[name] = [off, size]; off += size; }
+  if (off !== N_ACTIONS) throw new Error('动作空间分段错误');
+}
+const STATE_DIM = 260;
+const PHASE_IDX = { roll: 2, support: 3, main: 4, extra: 5 };
+
+/* 决策类型的中文名（横幅显示用） */
+const TYPE_LABEL = {
+  choice: '三选一', hammer: '金币→锤子', support: '支援阶段', die: '选择骰子',
+  owl: '猫头鹰', main: '主要行动', shop_item: '商店选购', shop_place: '骰面安放',
+  hero: '购买英雄', extra: '额外行动', helm: '隐形头盔',
+};
+
+/* ------------------------------ 随机数流 ------------------------------ */
+
+class DrawStream {
+  /** 顺序消费 Python 端录制的调用记录。
+   *  记录格式：['d', value] / ['i', high, value] / ['s', n, ...arr] */
+  constructor(calls) {
+    this.calls = calls || [];
+    this.pos = 0;
+  }
+  random() {
+    const c = this.calls[this.pos++];
+    if (!c || c[0] !== 'd') throw new Error(`随机数流类型不符（期望 d，实际 ${c && c[0]}）`);
+    return c[1];
+  }
+  integers(high) {
+    const c = this.calls[this.pos++];
+    if (!c) {
+      /* 场景随机流耗尽（理论上不会发生：每场景预留 600 次投掷）：
+         用位置派生的确定性回退，保证不崩且可复现 */
+      return (this.pos * 2654435761) % high;
+    }
+    if (c[0] !== 'i' || c[1] !== high) {
+      throw new Error(`随机数流类型不符（期望 i(${high})，实际 ${JSON.stringify(c)}）`);
+    }
+    return c[2];
+  }
+  shuffle(arr) {
+    const c = this.calls[this.pos++];
+    if (!c || c[0] !== 's' || c[1] !== arr.length) {
+      throw new Error(`随机数流类型不符（期望 s(${arr.length})，实际 ${JSON.stringify(c)}）`);
+    }
+    const perm = c[2];              // 记录的是洗牌后的数组内容
+    for (let i = 0; i < arr.length; i++) arr[i] = perm[i];
+    return arr;
+  }
+  snapshot() { return this.pos; }
+  restore(p) { this.pos = p; }
+  /** 派生一个独立流（分支模拟用）：位置相同但互不影响 */
+  fork() {
+    const s = new DrawStream(this.calls);
+    s.pos = this.pos;
+    return s;
+  }
+}
+
+/* ------------------------------ 对局 ------------------------------ */
+
+class Game {
+  constructor(draws, options = {}) {
+    /** draws: 随机数流记录，或 DrawStream 实例
+     *  options.left/right: 固定牌堆（人类场景用，不消费洗牌记录）
+     *  options.skipReset: 不在此处 reset（由随后的 play() 统一处理，避免重复消费随机流） */
+    this.stream = (draws instanceof DrawStream) ? draws : new DrawStream(draws);
+    this.fixedBoard = (options.left && options.right)
+      ? { left: options.left.slice(), right: options.right.slice() } : null;
+    this.logEnabled = !!options.log;
+    this.humanMode = false;
+    this.onEvent = options.onEvent || null;
+    this.recordTurnDecisions = true;
+    if (options.skipReset) {
+      /* 只初始化字段、不消费随机流；由随后的 play() 负责第一次 reset */
+      this.left = []; this.right = [];
+      this.red = 0; this.blue = 0; this.coin = 0; this.score = 0;
+      this.redCap = 6; this.blueCap = 6; this.coinCap = 12;
+      this.hammerTrack = 0; this.hammerCap = 0;
+      this.turn = 1; this.rollNum = 0; this.phase = 'roll';
+      this.heroesBought = []; this.limitedBought = new Set();
+      this.supportPool = []; this.visitBought = new Set();
+      this.rewardBuffer = 0; this.totalReward = 0; this.nDecisions = 0;
+      this.events = []; this.coinGainedTotal = 0; this.coinOverflowTotal = 0;
+      this.dtype = null; this.ctx = {}; this.turnDecisions = []; this.turnSnap = null;
+      this.agent = null;
+    } else {
+      this.reset();
+    }
+  }
+
+  reset() {
+    /* 无论是否固定牌堆，都消费一条洗牌记录，保证随机数流的消费顺序一致 */
+    const pool = ['1红', '1蓝', '2分'];
+    for (let i = 0; i < 9; i++) pool.push('1金币');
+    this.stream.shuffle(pool);
+    if (this.fixedBoard) {
+      this.left = this.fixedBoard.left.slice();
+      this.right = this.fixedBoard.right.slice();
+    } else {
+      this.left = pool.slice(0, 6);
+      this.right = pool.slice(6);
+    }
+    this.red = 0; this.blue = 0; this.coin = 0; this.score = 0;
+    this.redCap = 6; this.blueCap = 6; this.coinCap = 12;
+    this.hammerTrack = 0; this.hammerCap = 0;
+    this.turn = 1; this.rollNum = 0; this.phase = 'roll';
+    this.heroesBought = [];
+    this.limitedBought = new Set();
+    this.supportPool = [];
+    this.visitBought = new Set();
+    this.rewardBuffer = 0;
+    this.totalReward = 0;
+    this.nDecisions = 0;
+    this.events = [];
+    this.coinGainedTotal = 0;
+    this.coinOverflowTotal = 0;
+    this.dtype = null;
+    this.ctx = {};
+    this.turnDecisions = [];
+    this.turnSnap = null;
+    this.agent = null;
+  }
+
+  /* ---------------- 事件与奖励 ---------------- */
+  ev(text) {
+    if (this.logEnabled) this.events.push([this.turn, this.phase, text]);
+    if (this.onEvent) this.onEvent(text, this);
+  }
+  drainReward() {
+    const r = this.rewardBuffer;
+    if (r !== 0) {
+      this.rewardBuffer = 0;
+      this.totalReward += r;
+      if (this.agent && this.agent.credit) this.agent.credit(r);
+    }
+  }
+
+  /* ---------------- 决策接口（async） ---------------- */
+  async decide(dtype, ctx, legal, opts = null) {
+    if (this.nDecisions > 5000) throw new Error('决策次数超限，疑似死循环');
+    this.dtype = dtype;
+    this.ctx = ctx;
+    const vec = this.encodeState(dtype, ctx);
+    const mask = this.buildMask(dtype, legal);
+    this.drainReward();                    // 把上一决策期间累积的奖励记到上一动作
+    const a = await this.agent.decide(vec, mask, this);
+    const [off, size] = SEG_OFFSET[dtype];
+    /* opts.allowCancel：人类界面的「取消」返回值。注意智能体会返回 off+local，
+       取消时 local 为负，因此这里按 off + 取消值 来识别，并把取消值原样返回。 */
+    if (opts && opts.allowCancel && a === off + opts.allowCancel.value) {
+      this.nDecisions++;
+      if (this.recordTurnDecisions) this.turnDecisions.push([dtype, opts.allowCancel.value]);
+      return opts.allowCancel.value;
+    }
+    if (!(a >= off && a < off + size && mask[a] === 1)) {
+      throw new Error(`非法动作: dtype=${dtype} a=${a} legal=${legal}`);
+    }
+    this.nDecisions++;
+    if (this.recordTurnDecisions) this.turnDecisions.push([dtype, a - off]);
+    return a - off;
+  }
+  /* ---------------- 状态编码（260 维） ---------------- */
+  encodeState(dtype, ctx) {
+    const v = new Float32Array(STATE_DIM);
+    v[0] = this.turn / 9;
+    v[1] = this.rollNum / 4;
+    v[PHASE_IDX[this.phase]] = 1;
+    v[6 + DECISION_TYPES.indexOf(dtype)] = 1;
+    v[17] = this.red / 6;
+    v[18] = this.blue / 6;
+    v[19] = this.coin / 12;
+    v[20] = this.redCap / 12;
+    v[21] = this.blueCap / 12;
+    v[22] = this.coinCap / 24;
+    v[23] = this.hammerTrack / 60;
+    v[24] = this.hammerCap / 60;
+    v[25] = this.hammerCap > 0 ? 1 : 0;
+    const dice = this.left.concat(this.right);
+    for (let i = 0; i < 12; i++) {
+      const base = 26 + i * 15;
+      const f = FACES[dice[i]];
+      if (f.type === 'simple') {
+        v[base] = f.effect[0] / 6;
+        v[base + 1] = f.effect[1] / 6;
+        v[base + 2] = f.effect[2] / 6;
+        v[base + 3] = f.effect[3] / 6;
+      } else if (f.type === 'choice') {
+        v[base + 5] = 1;
+        for (let oi = 0; oi < f.options.length; oi++) {
+          v[base + 6 + oi * 3] = f.options[oi][0] / 6;
+          v[base + 7 + oi * 3] = f.options[oi][1] / 6;
+          v[base + 8 + oi * 3] = f.options[oi][2] / 6;
+        }
+      } else {
+        v[base + 4] = 1;
+      }
+    }
+    const counts = {};
+    for (const n of this.heroesBought) counts[n] = (counts[n] || 0) + 1;
+    for (let i = 0; i < HEROES.length; i++) {
+      v[206 + i] = Math.min(counts[HEROES[i].name] || 0, 4) / 4;
+    }
+    const left = { '长老': 0, '银鹿': 0, '猫头鹰': 0 };
+    for (const n of this.supportPool) if (n in left) left[n]++;
+    v[221] = Math.min(left['长老'], 4) / 4;
+    v[222] = Math.min(left['银鹿'], 4) / 4;
+    v[223] = Math.min(left['猫头鹰'], 4) / 4;
+    for (let i = 0; i < 8; i++) {
+      if (this.limitedBought.has(SHOP_ITEMS[8 + i].face)) v[224 + i] = 1;
+    }
+    for (let i = 0; i < SHOP_ITEMS.length; i++) {
+      if (this.visitBought.has(SHOP_ITEMS[i].face)) v[232 + i] = 1;
+    }
+    const p = 248;
+    if (dtype === 'choice') {
+      v[p + 2] = ctx.mult / 3;
+      for (let oi = 0; oi < ctx.options.length; oi++) {
+        v[p + 3 + oi * 3] = ctx.options[oi][0] / 6;
+        v[p + 4 + oi * 3] = ctx.options[oi][1] / 6;
+        v[p + 5 + oi * 3] = ctx.options[oi][2] / 6;
+      }
+    } else if (dtype === 'hammer') {
+      v[p] = ctx.coins_gained / 18;
+      v[p + 1] = ctx.max_conv / 18;
+    }
+    return v;
+  }
+
+  buildMask(dtype, legal) {
+    const m = new Float32Array(N_ACTIONS);
+    const [off] = SEG_OFFSET[dtype];
+    for (const i of legal) m[off + i] = 1;
+    return m;
+  }
+
+  /* ---------------- 资源与锤子 ---------------- */
+  async gainResources(res, source = '') {
+    const gained = { red: 0, blue: 0, coin: 0, score: 0, hammer: 0 };
+    const red = res.red || 0, blue = res.blue || 0, score = res.score || 0, cv = res.coin || 0;
+    for (const k of ['red', 'blue']) {
+      const val = (k === 'red') ? red : blue;
+      if (!val) continue;
+      const cap = (k === 'red') ? this.redCap : this.blueCap;
+      const cur = (k === 'red') ? this.red : this.blue;
+      const a = Math.min(val, cap - cur);
+      if (k === 'red') this.red += a; else this.blue += a;
+      gained[k] = a;
+    }
+    if (score) {
+      this.score += score;
+      gained.score = score;
+      this.rewardBuffer += score;
+    }
+    if (cv) {
+      let conv = 0;
+      this.coinGainedTotal += cv;
+      if (this.hammerCap > 0) {
+        const maxConv = Math.min(cv, this.hammerCap - this.hammerTrack);
+        if (maxConv > 0) {
+          const legal = [];
+          for (let i = 0; i <= maxConv; i++) legal.push(i);
+          conv = await this.decide('hammer', { coins_gained: cv, max_conv: maxConv }, legal);
+          this.ev(`⛏️ 金币→锤子：转换 ${conv} 枚（其余 ${cv - conv} 枚进金币）`);
+        }
+      }
+      conv = Math.min(conv, cv, Math.max(0, this.hammerCap - this.hammerTrack));
+      this.addHammer(conv);
+      const rem = cv - conv;
+      const add = Math.min(rem, this.coinCap - this.coin);
+      this.coin += add;
+      this.coinOverflowTotal += (rem - add);
+      gained.coin = add;
+      gained.hammer = conv;
+    }
+    const parts = [];
+    if (gained.red) parts.push(`🔴+${gained.red}`);
+    if (gained.blue) parts.push(`🔵+${gained.blue}`);
+    if (gained.coin) parts.push(`💰+${gained.coin}`);
+    if (gained.score) parts.push(`⭐+${gained.score}`);
+    if (gained.hammer) parts.push(`🔨+${gained.hammer}`);
+    if (parts.length) this.ev('获得: ' + parts.join(' ') + (source ? `（${source}）` : ''));
+    return gained;
+  }
+
+  addHammer(amount) {
+    if (amount <= 0 || this.hammerCap === 0) return;
+    const old = this.hammerTrack;
+    const nw = Math.min(old + amount, this.hammerCap);
+    if (nw === old) return;
+    this.hammerTrack = nw;
+    for (let k = 1; k * 15 <= this.hammerCap; k++) {
+      const th = k * 15;
+      if (old < th && th <= nw) {
+        const pts = (k % 2 === 1) ? 10 : 15;
+        this.score += pts;
+        this.rewardBuffer += pts;
+        this.ev(`🔨 锤子达到 ${th}，获得 ${pts} 分！`);
+      }
+    }
+  }
+
+  canPay(cost) {
+    return this.red >= (cost.red || 0) && this.blue >= (cost.blue || 0)
+      && this.coin >= (cost.coin || 0);
+  }
+  payCost(cost) {
+    if (!this.canPay(cost)) return false;
+    this.red -= cost.red || 0;
+    this.blue -= cost.blue || 0;
+    this.coin -= cost.coin || 0;
+    return true;
+  }
+
+  isFaceChoice(face) {
+    const f = FACES[face];
+    if (f.type === 'choice') return true;
+    if (f.type === 'simple' && f.effect[2] > 0 && this.hammerCap > 0) return true;
+    return false;
+  }
+
+  /* ---------------- 投掷与结算 ---------------- */
+  async resolveFace(face, mult = 1, source = '') {
+    const f = FACES[face];
+    if (f.type === 'triple') return;
+    let res;
+    if (f.type === 'choice') {
+      const opts = f.options.map(o => o.map(x => mult * x));
+      const idx = await this.decide('choice', { options: opts, mult }, [0, 1, 2]);
+      const opt = opts[idx];
+      const labels = ['🔴红', '🔵蓝', '💰金币'];
+      const chosen = opt.map((v, i) => v ? `${v}${labels[i]}` : null).filter(Boolean).join(' + ');
+      this.ev(`${source}三选一(${face})${mult > 1 ? '×' + mult : ''}：选择 ${chosen}`);
+      res = { red: opt[0], blue: opt[1], coin: opt[2] };
+    } else {
+      const [r, b, c, s] = f.effect;
+      res = { red: r * mult, blue: b * mult, coin: c * mult, score: s * mult };
+    }
+    await this.gainResources(res, source);
+  }
+
+  async resolveTwoFaces(lf, rf, source = '') {
+    const faces = [lf, rf];
+    const tri = [];
+    if (FACES[lf].type === 'triple') tri.push(0);
+    if (FACES[rf].type === 'triple') tri.push(1);
+    if (tri.length === 2) {
+      this.ev('两个三倍，无收获');
+    } else if (tri.length === 1) {
+      const other = faces[1 - tri[0]];
+      this.ev(`⚡ 三倍触发！${other} ×3`);
+      await this.resolveFace(other, 3, source);
+    } else {
+      const lc = this.isFaceChoice(lf), rc = this.isFaceChoice(rf);
+      if ((!lc && !rc) || (!lc && rc)) {
+        await this.resolveFace(lf, 1, source); await this.resolveFace(rf, 1, source);
+      } else if (lc && !rc) {
+        await this.resolveFace(rf, 1, source); await this.resolveFace(lf, 1, source);
+      } else {
+        await this.resolveFace(lf, 1, source); await this.resolveFace(rf, 1, source);
+      }
+    }
+  }
+
+  async rollBoth(n, source = '') {
+    const lf = this.left[this.stream.integers(6)];
+    const rf = this.right[this.stream.integers(6)];
+    this.ev(`🎲 第${n}次投掷：左[${lf}] 右[${rf}]`);
+    await this.resolveTwoFaces(lf, rf, source);
+  }
+
+  /* ---------------- 支援阶段 ---------------- */
+  async supportPhase() {
+    this.supportPool = this.heroesBought.filter(h => SUPPORT_HEROES.includes(h));
+    this.ev('🛡️ 支援阶段开始');    while (this.supportPool.length) {
+      const legal = [];
+      for (let i = 0; i < SUPPORT_HEROES.length; i++) {
+        const n = SUPPORT_HEROES[i];
+        if (this.supportPool.includes(n) && !(n === '长老' && this.coin < 3)) legal.push(i);
+      }
+      legal.push(3);
+      const idx = await this.decide('support', {}, legal);
+      if (idx === 3) { this.ev('⏭️ 结束支援阶段'); break; }
+      const ability = SUPPORT_HEROES[idx];
+      this.supportPool.splice(this.supportPool.indexOf(ability), 1);
+      const ok = await this.executeSupport(ability);
+      if (!ok) this.supportPool.push(ability);
+    }
+    this.supportPool = [];
+  }
+
+  async executeSupport(ability) {
+    if (ability === '长老') {
+      if (this.coin < 3) { this.ev('金币不足3，无法发动长老'); return false; }
+      this.coin -= 3; this.score += 4; this.rewardBuffer += 4;
+      this.ev('🧙 长老：支付 3 金币，获得 4 分');
+    } else if (ability === '银鹿') {
+      const idx = await this.decide('die', {}, [0, 1]);
+      const die = idx === 0 ? this.left : this.right;
+      const face = die[this.stream.integers(6)];
+      this.ev(`🦌 银鹿：单独投掷${idx === 0 ? '左' : '右'}骰 → [${face}]`);
+      await this.resolveFace(face, 1, '银鹿');
+    } else if (ability === '猫头鹰') {
+      const idx = await this.decide('owl', {}, [0, 1, 2]);
+      const res = [{ red: 1 }, { blue: 1 }, { coin: 1 }][idx];
+      const label = ['🔴 1红', '🔵 1蓝', '💰 1金币'][idx];
+      this.ev(`🦉 猫头鹰：选择 ${label}`);
+      await this.gainResources(res, '猫头鹰');
+    }
+    return true;
+  }
+
+  /* ---------------- 行动阶段 ---------------- */
+  async actionMenu(extra) {
+    const failed = new Set();
+    while (true) {
+      const canHero = !(this.red === 0 && this.blue === 0);
+      const canShop = this.coin >= 2;
+      const legal = [];
+      if (canShop && !failed.has(0)) legal.push(0);
+      if (canHero && !failed.has(1)) legal.push(1);
+      legal.push(2);
+      const idx = await this.decide(extra ? 'extra' : 'main', {}, legal);
+      if (idx === 0) {
+        if (await this.enterShop()) return true;
+        if (!this.humanMode) failed.add(0);
+      } else if (idx === 1) {
+        if (await this.buyHero()) return true;
+        if (!this.humanMode) failed.add(1);
+      } else {
+        this.ev('⏭️ 跳过' + (extra ? '（返还2红色资源）' : ''));
+        return false;
+      }
+    }
+  }
+
+  async enterShop() {
+    this.visitBought = new Set();
+    let boughtAnything = false;
+    this.ev('🏪 进入骰面商店');
+    while (true) {
+      const available = [];
+      for (let i = 0; i < SHOP_ITEMS.length; i++) {
+        const item = SHOP_ITEMS[i];
+        if (item.limited && this.limitedBought.has(item.face)) continue;
+        if (this.visitBought.has(item.face)) continue;
+        if (this.coin < item.price) continue;
+        available.push(i);
+      }
+      if (!available.length) {
+        this.ev(boughtAnything ? '无法继续购买，商店关闭' : '金币不足以购买任何可购骰面');
+        break;
+      }
+      const legal = available.concat([16]);
+      const idx = await this.decide('shop_item', {}, legal);
+      if (idx === 16) { this.ev('结束购买'); break; }
+      const item = SHOP_ITEMS[idx];
+      if (this.coin < item.price) { this.ev('金币不足！'); continue; }
+      const legalPlace = [];
+      for (let i = 0; i < 12; i++) legalPlace.push(i);
+      const pos = await this.decide('shop_place', { item_face: item.face }, legalPlace,
+                                    { allowCancel: { value: -1 } });
+      if (!(pos >= 0 && pos <= 11)) {      // 取消/异常值：不扣金币、留在商店
+        this.ev(`↩ 取消购买 ${item.face}（未花费金币，可重新选择）`);
+        continue;
+      }
+      this.coin -= item.price;
+      const face = item.face;
+      let side, slot;
+      if (pos < 6) { this.left[pos] = face; side = '左'; slot = pos + 1; }
+      else { this.right[pos - 6] = face; side = '右'; slot = pos - 6 + 1; }
+      this.visitBought.add(face);
+      if (item.limited) this.limitedBought.add(face);
+      boughtAnything = true;
+      this.ev(`🛒 购买 ${face}（${item.price}金币）→ 放在${side}骰子第${slot}面`
+        + (item.limited ? '（限购，本局下架）' : ''));
+    }
+    return boughtAnything;
+  }
+
+  async buyHero() {
+    const affordable = [];
+    for (let i = 0; i < HEROES.length; i++) if (this.canPay(HEROES[i].cost)) affordable.push(i);
+    const legal = affordable.concat([15]);
+    const idx = await this.decide('hero', {}, legal);
+    if (idx === 15) { this.ev('取消购买英雄'); return false; }
+    const hero = HEROES[idx];
+    if (!this.payCost(hero.cost)) { this.ev('资源不足！'); return false; }
+    this.heroesBought.push(hero.name);
+    this.rewardBuffer += hero.score;
+    const costStr = Object.entries(hero.cost)
+      .map(([k, v]) => `${v}${k === 'red' ? '红' : k === 'blue' ? '蓝' : '金币'}`).join(' ');
+    this.ev(`🦸 购买英雄：${hero.name}（费用 ${costStr}，分值 ⭐${hero.score}）`);
+    if (hero.effect === 'immediate') await this.triggerImmediate(hero);
+    return true;
+  }
+
+  async triggerImmediate(hero) {
+    const hid = hero.id;
+    if (hid === 'wild_spirit') {
+      this.ev('🌿 野灵：获得 3 蓝色资源 + 3 金币');
+      await this.gainResources({ blue: 3, coin: 3 }, '野灵');
+    } else if (hid === 'sphinx') {
+      const idx = await this.decide('die', {}, [0, 1]);
+      const die = idx === 0 ? this.left : this.right;
+      this.ev(`🦁 斯芬克斯：${idx === 0 ? '左' : '右'}骰子单独投掷 4 次`);
+      for (let i = 0; i < 4; i++) {
+        const face = die[this.stream.integers(6)];
+        this.ev(`  斯芬克斯第${i + 1}次：[${face}]`);
+        await this.resolveFace(face, 1, '斯芬克斯');
+      }
+    } else if (hid === 'crab') {
+      this.ev('🦀 巨蟹：双骰同时投掷 2 次');
+      for (let i = 0; i < 2; i++) {
+        const lf = this.left[this.stream.integers(6)];
+        const rf = this.right[this.stream.integers(6)];
+        this.ev(`  巨蟹第${i + 1}次：左[${lf}] 右[${rf}]`);
+        await this.resolveTwoFaces(lf, rf, '巨蟹');
+      }
+    } else if (hid === 'helm') {
+      const legal = [];
+      for (let i = 0; i < 12; i++) legal.push(i);
+      const pos = await this.decide('helm', {}, legal);
+      const side = pos < 6 ? '左' : '右';
+      const slot = pos < 6 ? pos + 1 : pos - 6 + 1;
+      if (pos < 6) this.left[pos] = '三倍'; else this.right[pos - 6] = '三倍';
+      this.ev(`🪖 隐形头盔：${side}骰子第${slot}面 → 三倍(X3)`);
+    } else if (hid === 'chest') {
+      this.redCap += 3; this.blueCap += 3; this.coinCap += 4;
+      this.ev(`📦 宝箱：红/蓝上限+3、金币上限+4（红${this.redCap} 蓝${this.blueCap} 金${this.coinCap}）`);
+    } else if (hid === 'hammer') {
+      if (this.hammerCap === 0) this.hammerTrack = 0;
+      this.hammerCap += 30;
+      this.ev(`🔨 锤子：锤子轨道上限 +30（当前上限 ${this.hammerCap}）`);
+    }
+  }
+
+  async extraAction() {
+    if (this.red < 2) { this.ev('红色资源不足 2，跳过额外行动阶段'); return; }
+    if (this.red === 2 && this.blue === 0 && this.coin < 2) {
+      this.ev('资源不足进行有效行动，跳过额外行动阶段'); return;
+    }
+    this.red -= 2;
+    this.ev('支付 2 红色资源，进入额外行动阶段');
+    const acted = await this.actionMenu(true);
+    if (!acted) { this.red += 2; this.ev('额外行动未进行，返还 2 红色资源'); }
+  }
+
+  summary() {
+    const h = this.hammerCap > 0 ? `，锤 ${this.hammerTrack}/${this.hammerCap}` : '';
+    this.ev(`  状态：红 ${this.red}/${this.redCap} 蓝 ${this.blue}/${this.blueCap} `
+      + `金 ${this.coin}/${this.coinCap} 分 ${this.score}${h}`);
+  }
+
+  /* ---------------- 主循环（async） ---------------- */
+  async play(agent, startTurn = null, hooks = null) {
+    if (startTurn === null) { this.reset(); startTurn = 1; }
+    this.agent = agent;            // 注意：reset() 会把 agent 置空，需在 reset 之后赋值
+    if (this.left.length === 0) {  // skipReset 构造出来的对局：补一次 reset
+      this.reset();
+      this.agent = agent;
+    }
+    for (let turn = startTurn; turn <= 9; turn++) {
+      this.turn = turn;
+      this.turnSnap = this.takeSnapshot();
+      this.turnDecisions = [];
+      this.ev(`════════ 第 ${turn} 回合 ════════`);
+      if (hooks && hooks.onEvent) await hooks.onEvent(`════════ 第 ${turn} 回合 ════════`, this);
+      this.phase = 'roll';
+      this.supportPool = this.heroesBought.filter(h => SUPPORT_HEROES.includes(h));
+      for (let i = 1; i <= 4; i++) {
+        this.rollNum = i;
+        const faceL = this.left[this.stream.integers(6)];
+        const faceR = this.right[this.stream.integers(6)];
+        const rollText = `🎲 第${i}次投掷：左[${faceL}] 右[${faceR}]`;
+        this.ev(rollText);
+        if (hooks && hooks.onEvent) {
+          await hooks.onEvent(rollText, this);       // 人类/AI 演示的「投掷停顿」在这里发生
+        }
+        await this.resolveTwoFaces(faceL, faceR, '');
+      }
+      this.summary();
+      this.phase = 'support';
+      await this.supportPhase();
+      this.summary();
+      this.phase = 'main';
+      this.ev('📌 主要行动阶段');
+      if (hooks && hooks.onEvent) await hooks.onEvent('📌 主要行动阶段', this);
+      await this.actionMenu(false);
+      this.summary();
+      this.phase = 'extra';
+      this.ev('➕ 额外行动阶段');
+      if (hooks && hooks.onEvent) await hooks.onEvent('➕ 额外行动阶段', this);
+      await this.extraAction();
+      this.summary();
+      if (hooks && hooks.onTurnEnd) await hooks.onTurnEnd(this, turn);
+    }
+    this.phase = 'end';
+    let heroTotal = 0;
+    for (const h of this.heroesBought) heroTotal += HERO_SCORE[h];
+    const total = this.score + heroTotal;
+    this.ev(`🏁 游戏结束：游戏分 ${this.score} + 英雄分 ${heroTotal} = 最终总分 ${total}`);
+    this.ev(`🎲 最终骰面：左 [${this.left.join(' | ')}]  右 [${this.right.join(' | ')}]`);
+    this.ev(`🏆 已购英雄：${this.heroesBought.length ? this.heroesBought.join(' → ') : '无'}`);
+    this.drainReward();
+    return total;
+  }
+
+  /* ---------------- 快照/恢复（浅层搜索用） ---------------- */
+  takeSnapshot() {
+    return {
+      left: this.left.slice(), right: this.right.slice(),
+      red: this.red, blue: this.blue, coin: this.coin, score: this.score,
+      redCap: this.redCap, blueCap: this.blueCap, coinCap: this.coinCap,
+      hammerTrack: this.hammerTrack, hammerCap: this.hammerCap,
+      turn: this.turn, rollNum: this.rollNum, phase: this.phase,
+      heroesBought: this.heroesBought.slice(),
+      limitedBought: new Set(this.limitedBought),
+      supportPool: this.supportPool.slice(),
+      visitBought: new Set(this.visitBought),
+      rewardBuffer: this.rewardBuffer, totalReward: this.totalReward,
+      nDecisions: this.nDecisions,
+      coinGainedTotal: this.coinGainedTotal, coinOverflowTotal: this.coinOverflowTotal,
+      drawPos: this.stream.snapshot(),
+    };
+  }
+
+  restoreSnapshot(snap) {
+    this.left = snap.left.slice(); this.right = snap.right.slice();
+    this.red = snap.red; this.blue = snap.blue; this.coin = snap.coin; this.score = snap.score;
+    this.redCap = snap.redCap; this.blueCap = snap.blueCap; this.coinCap = snap.coinCap;
+    this.hammerTrack = snap.hammerTrack; this.hammerCap = snap.hammerCap;
+    this.turn = snap.turn; this.rollNum = snap.rollNum; this.phase = snap.phase;
+    this.heroesBought = snap.heroesBought.slice();
+    this.limitedBought = new Set(snap.limitedBought);
+    this.supportPool = snap.supportPool.slice();
+    this.visitBought = new Set(snap.visitBought);
+    this.rewardBuffer = snap.rewardBuffer; this.totalReward = snap.totalReward;
+    this.nDecisions = snap.nDecisions;
+    this.coinGainedTotal = snap.coinGainedTotal;
+    this.coinOverflowTotal = snap.coinOverflowTotal;
+    this.stream.restore(snap.drawPos);
+  }
+
+  cloneFromTurnStart() {
+    /** 从当前回合起点克隆（随机流回到回合起点位置）：搜索结果分支用。
+     *  注意 1：skipReset=true —— 克隆不能消费随机流记录，
+     *          否则会打乱分支重放（这里的位置由 restoreSnapshot 精确设置）。
+     *  注意 2：agent 继承父对局（Python 版同样在 clone 后由 play() 重新赋值）。 */
+    const c = new Game(this.stream.fork(), { log: false, skipReset: true });
+    c.restoreSnapshot(this.turnSnap);
+    c.agent = this.agent;
+    c.events = [];
+    c.logEnabled = false;
+    c.onEvent = null;
+    c.humanMode = false;
+    c.recordTurnDecisions = true;
+    return c;
+  }
+}
+
+/* 既可以在浏览器里作为全局脚本加载（window.Game 等），也可以在 Node 里 require 使用。
+ * 在浏览器中：Game/DrawStream/... 直接是全局常量；在 Node 中：module.exports。 */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { Game, DrawStream, FACES, SHOP_ITEMS, HEROES, HERO_SCORE,
+                     SUPPORT_HEROES, DECISION_TYPES, SEG_OFFSET, N_ACTIONS,
+                     STATE_DIM, TYPE_LABEL };
+}
+
+</script>
+<script>
+/* ============================================================================
+ * 骰子英雄 · 模型推理（model.js）
+ * ---------------------------------------------------------------------------
+ * 读取 model/weights.bin（int8 对称量化，per-output-channel scale）+ model/meta.json，
+ * 在运行时**反量化**为 float32 做全精度推理。
+ *
+ * 网络结构：
+ *   策略网 PolicyNet：260 → 1024 → 1024 → 1024（ReLU）→ 策略头 94 + 价值头 1
+ *   价值网 ValueNet ：260 → 512 → 512（ReLU）→ 1
+ * ==========================================================================*/
+
+class Linear {
+  constructor(wInt8, scale, bias, inDim, outDim) {
+    this.inDim = inDim;
+    this.outDim = outDim;
+    this.bias = bias;
+    /* 反量化一次并缓存为 float32（运行时全精度推理） */
+    this.wf = new Float32Array(inDim * outDim);
+    for (let o = 0; o < outDim; o++) {
+      const s = scale[o];
+      const base = o * inDim;
+      for (let i = 0; i < inDim; i++) this.wf[base + i] = wInt8[base + i] * s;
+    }
+  }
+
+  forward(x) {
+    const { inDim, outDim, wf, bias } = this;
+    const y = new Float32Array(outDim);
+    for (let o = 0; o < outDim; o++) {
+      const base = o * inDim;
+      let acc = bias[o];
+      for (let i = 0; i < inDim; i++) acc += wf[base + i] * x[i];
+      y[o] = acc;
+    }
+    return y;
+  }
+}
+
+function reluInPlace(x) {
+  for (let i = 0; i < x.length; i++) if (x[i] < 0) x[i] = 0;
+  return x;
+}
+
+
+/** 把内嵌的 base64 权重解码为 ArrayBuffer（等价于 fetch 回来的二进制） */
+function embeddedWeightsBuffer() {
+  const b64 = window.__DSH_EMBED__.weightsB64;
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i) & 0xff;
+  return bytes.buffer;
+}
+
+/** 载入内嵌的量化权重；返回 { meta, policy, value }，其中每项为 [{layer, name}] */
+async function loadWeights() {
+  const meta = window.__DSH_EMBED__.modelMeta;
+  const buf = embeddedWeightsBuffer();
+  const idx = meta.index;
+
+  const sliceI8 = (name) => new Int8Array(buf, idx[name].offset, idx[name].count);
+  const sliceF32 = (name) => new Float32Array(buf, idx[name].offset, idx[name].count);
+
+  const build = (spec) => spec.layers.map((L) => {
+    const q = sliceI8(`${L.name}.q`);
+    const scale = sliceF32(`${L.name}.scale`);
+    if (q.length !== L.in * L.out) {
+      throw new Error(`权重形状不符：${L.name} ${L.in}×${L.out}，实际 ${q.length}`);
+    }
+    if (scale.length !== L.out) {
+      throw new Error(`量化 scale 数量不符：${L.name} 期望 ${L.out}，实际 ${scale.length}`);
+    }
+    return {
+      name: L.name,
+      layer: new Linear(q, scale, Float32Array.from(L.bias), L.in, L.out),
+    };
+  });
+  return { meta, policy: build(meta.policy), value: build(meta.value) };
+}
+
+/** 策略网前向：返回 { logits: Float32Array(94), value: number } */
+function policyForward(net, x) {
+  let h = x;
+  let logits = null;
+  let value = 0;
+  const layers = net.policy;
+  for (let i = 0; i < layers.length; i++) {
+    const { layer, name } = layers[i];
+    h = layer.forward(h);
+    const isPi = name.endsWith('pi');
+    const isVh = name.endsWith('vh');
+    if (isPi) logits = h;
+    else if (isVh) value = h[0];
+    else reluInPlace(h);
+  }
+  return { logits, value };
+}
+
+/** 价值网前向：返回标量 V(s)（剩余期望得分） */
+function valueForward(net, x) {
+  let h = x;
+  const layers = net.value;
+  for (let i = 0; i < layers.length; i++) {
+    const { layer, name } = layers[i];
+    h = layer.forward(h);
+    if (!name.endsWith('head')) reluInPlace(h);
+  }
+  return h[0];
+}
+
+/** 掩码 softmax（等价于 Python 端 masked_probs） */
+function maskedProbs(logits, mask) {
+  const n = logits.length;
+  const out = new Float32Array(n);
+  let maxV = -Infinity;
+  for (let i = 0; i < n; i++) {
+    if (mask[i] < 0.5) continue;
+    if (logits[i] > maxV) maxV = logits[i];
+  }
+  let sum = 0;
+  for (let i = 0; i < n; i++) {
+    if (mask[i] < 0.5) { out[i] = 0; continue; }
+    const e = Math.exp(logits[i] - maxV);
+    out[i] = e;
+    sum += e;
+  }
+  if (sum <= 0) return out;
+  for (let i = 0; i < n; i++) out[i] /= sum;
+  return out;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { loadWeights, policyForward, valueForward, maskedProbs, Linear };
+}
+
+</script>
+<script>
+/* ============================================================================
+ * 骰子英雄 · 智能体（agents.js）
+ * ---------------------------------------------------------------------------
+ * 四类智能体（与 Python 端等价）：
+ *   GreedyAgent   —— 策略网 argmax（评估/模拟内部使用）
+ *   SampleAgent   —— 按策略分布采样（训练用，网页端仅用于展示温度效果）
+ *   SearchAgent   —— 浅层搜索：候选动作 × (depth 步模拟 + V 叶子)
+ *   ScriptedAgent —— 回放预先录制好的决策序列（用于逐帧复现 AI 对局并校验）
+ *
+ * 所有 decide 都是 async（人类智能体会 await 用户点击；AI 智能体立即返回）。
+ * ==========================================================================*/
+
+/* 依赖解析：
+ *   浏览器 —— game.js / model.js 已把常量与函数挂到全局，直接引用即可；
+ *   Node    —— 通过 require 取值，并放到 globalThis 上（避免与全局 const 重复声明冲突）。 */
+if (typeof module !== 'undefined' && module.exports) {
+  const G = require('./game.js');
+  const M = require('./model.js');
+  globalThis.SEG_OFFSET = G.SEG_OFFSET;
+  globalThis.policyForward = M.policyForward;
+  globalThis.valueForward = M.valueForward;
+  globalThis.maskedProbs = M.maskedProbs;
+}
+
+const SEARCH_TYPES = new Set(['support', 'main', 'extra', 'shop_item', 'shop_place', 'hero', 'hammer']);
+
+/** 模拟内部：先重放强制决策，之后交给基础策略；超过 stopAfter 步抛出截断 */
+class StopSimulation extends Error {
+  constructor(rewardSum, vec) {
+    super('stop');
+    this.rewardSum = rewardSum;
+    this.vec = vec;
+  }
+}
+
+class SimAgent {
+  constructor(base, forced, stopAfter) {
+    this.base = base;
+    this.forced = forced.slice();
+    this.stopAfter = stopAfter;
+    this.rewardSum = 0;
+    this.served = 0;
+  }
+  credit(r) { this.rewardSum += r; }
+  async decide(vec, mask, game) {
+    if (this.forced.length) {
+      const [dtype, local] = this.forced.shift();
+      if (dtype !== game.dtype) throw new Error(`重放不一致: ${dtype} vs ${game.dtype}`);
+      const [off] = SEG_OFFSET[dtype];
+      return off + local;
+    }
+    const a = await this.base.decide(vec, mask, game);
+    this.served++;
+    if (this.served > this.stopAfter) throw new StopSimulation(this.rewardSum, vec);
+    return a;
+  }
+}
+
+class GreedyAgent {
+  constructor(net) { this.net = net; }
+  credit() {}
+  async decide(vec, mask) {
+    const { logits } = policyForward(this.net, vec);
+    let best = -1, bestP = -Infinity;
+    for (let i = 0; i < logits.length; i++) {
+      if (mask[i] < 0.5) continue;
+      if (logits[i] > bestP) { bestP = logits[i]; best = i; }
+    }
+    return best;
+  }
+}
+
+class SampleAgent {
+  constructor(net, temperature = 1.0) { this.net = net; this.t = temperature; }
+  credit() {}
+  async decide(vec, mask) {
+    const { logits } = policyForward(this.net, vec);
+    const scaled = Float32Array.from(logits, (x) => x / this.t);
+    const probs = maskedProbs(scaled, mask);
+    let r = Math.random(), acc = 0;
+    for (let i = 0; i < probs.length; i++) {
+      acc += probs[i];
+      if (r <= acc) return i;
+    }
+    return probs.length - 1;
+  }
+}
+
+/** 回放智能体：按录制好的 (type, localAction) 序列作答，并校验类型一致 */
+class ScriptedAgent {
+  constructor(decisions, options = {}) {
+    this.decisions = decisions;
+    this.pos = 0;
+    this.strict = options.strict !== false;
+    this.onDecision = options.onDecision || null;
+    this.log = [];
+  }
+  credit() {}
+  async decide(vec, mask, game) {
+    const rec = this.decisions[this.pos];
+    if (!rec) throw new Error(`回放越界（第 ${this.pos} 个决策）`);
+    if (this.strict && rec.type !== game.dtype) {
+      throw new Error(`第 ${this.pos} 个决策类型不符：录制 ${rec.type}，实际 ${game.dtype}`);
+    }
+    const [off] = SEG_OFFSET[game.dtype];
+    const a = off + rec.action;
+    if (mask[a] !== 1) {
+      throw new Error(`第 ${this.pos} 个决策非法：type=${game.dtype} action=${rec.action}`);
+    }
+    this.pos++;
+    this.log.push({ type: game.dtype, action: rec.action, ctx: game.ctx });
+    if (this.onDecision) this.onDecision(this.pos - 1, game.dtype, rec.action, vec, mask, game);
+    return a;
+  }
+}
+
+/**
+ * 浅层搜索智能体（对应 Python 的 search_agent.SearchAgent）
+ *   estimate(候选) = depth 步模拟中获得的分 + V(第 depth 步状态)；第 7 回合起直接模拟到终局
+ */
+class SearchAgent {
+  constructor(weights, options = {}) {
+    this.weights = weights;
+    this.depth = options.depth != null ? options.depth : 12;
+    this.topk = options.topk != null ? options.topk : 4;
+    this.searchTypes = options.searchTypes || SEARCH_TYPES;
+    this.onDecision = options.onDecision || null;   // 供界面展示「本条决策的候选估值」
+    this.onSlow = options.onSlow || null;           // 单步搜索过慢时提示界面
+    this.slowThresholdMs = options.slowThresholdMs || 2500;
+    this.greedy = new GreedyAgent(weights);
+    this.nSearched = 0;
+    this.nSim = 0;
+    this.lastEval = null;      // 最近一次决策的候选评估（供横幅展示）
+  }
+
+  credit() {}
+
+  candidates(vec, mask, legal, dtype) {
+    if (legal.length <= this.topk) return legal.slice();
+    const { logits } = policyForward(this.weights, vec);
+    const probs = maskedProbs(logits, mask);
+    const [off] = SEG_OFFSET[dtype];
+    return legal.slice().sort((i, j) => probs[off + j] - probs[off + i]).slice(0, this.topk);
+  }
+
+  async evaluateBranch(game, dtype, cand) {
+    const clone = game.cloneFromTurnStart();
+    const forced = game.turnDecisions.concat([[dtype, cand]]);
+    const late = game.turn >= 7;
+    const stop = late ? 1e9 : this.depth;
+    const sim = new SimAgent(this.greedy, forced, stop);
+    try {
+      const total = await clone.play(sim, game.turn);
+      this.nSim++;
+      return { value: total, leafValue: null, exact: true };
+    } catch (e) {
+      if (!(e instanceof StopSimulation)) throw e;
+      this.nSim++;
+      const v = valueForward(this.weights, e.vec);
+      return { value: e.rewardSum + v, leafValue: v, exact: false };
+    }
+  }
+
+  async decide(vec, mask, game) {
+    const dtype = game.dtype;
+    if (!this.searchTypes.has(dtype)) {
+      const a = await this.greedy.decide(vec, mask, game);
+      this.lastEval = { searched: false, type: dtype, action: a - SEG_OFFSET[dtype][0] };
+      return a;
+    }
+    const tStart = Date.now();
+    const [off] = SEG_OFFSET[dtype];
+    const legal = [];
+    for (let i = 0; i < mask.length; i++) if (mask[i] === 1) legal.push(i - off);
+    const cands = this.candidates(vec, mask, legal, dtype);
+    const evals = [];
+    let bestA = cands[0], bestV = -Infinity;
+    for (const cand of cands) {
+      const r = await this.evaluateBranch(game, dtype, cand);
+      evals.push({ action: cand, value: r.value, leaf: r.leafValue, exact: r.exact });
+      if (r.value > bestV) { bestV = r.value; bestA = cand; }
+    }
+    this.nSearched++;
+    this.lastEval = {
+      searched: true, type: dtype, action: bestA, value: bestV,
+      candidates: evals, depth: this.depth, topk: this.topk,
+    };
+    if (this.onDecision) await this.onDecision(dtype, vec, mask, game);
+    const cost = Date.now() - tStart;
+    if (this.onSlow && cost > this.slowThresholdMs) this.onSlow(cost);
+    return off + bestA;
+  }
+}
+
+/* 浏览器环境：把类挂到全局，供 UI 脚本使用 */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { GreedyAgent, SampleAgent, ScriptedAgent, SearchAgent,
+                     SimAgent, StopSimulation, SEARCH_TYPES };
+} else {
+  Object.assign(globalThis, { GreedyAgent, SampleAgent, ScriptedAgent, SearchAgent,
+    SimAgent, StopSimulation, SEARCH_TYPES });
+}
+
+</script>
+<script>
+/* ============================================================================
+ * 骰子英雄 · 界面与模式调度（ui.js）
+ * ---------------------------------------------------------------------------
+ * 两种模式：
+ *   人类游玩 —— 用同一个游戏引擎 + HumanAgent（弹窗交互），走完整 9 回合；
+ *   AI 演示  —— 用同一个引擎 + ScriptedAgent 回放离线录制的决策（v9_bc + v9_value_b，
+ *               搜索口径 150.86），每个决策弹出横幅并暂停 1.2 秒。
+ * 两种模式结束后都进入结算界面，并可返回初始界面。
+ * ==========================================================================*/
+
+/* ------------------------------ 全局状态 ------------------------------ */
+const APP = {
+  weights: null,          // 量化模型（策略 + 价值）
+  demos: null,            // 离线录制的 AI 演示局
+  scenarios: null,        // 人类游玩场景（固定牌堆 + 投掷序列）
+  game: null,
+  running: false,
+  lastSummary: null,
+};
+
+const STATS = {
+  ai: 'v9_bc + v9_value_b', aiSearchMean: 150.86, aiSearchN: 525,
+  aiGreedyMean: 145.4, humanExpert: 165.92, random: 38.79, heuristic: 104.02,
+};
+
+/* ------------------------------ 播放节奏 ------------------------------
+ * 人类游玩：每次投掷等 0.7 秒（方便看清骰面），并自动隐藏需要点骰面的弹窗
+ * AI 演示：每个决策等 3 秒（标准档），回合开始 / 阶段切换 / 投掷处另有停顿
+ * 速度倍率：标准 3 秒 → 慢 ×1.6，快 ×0.5
+ */
+const PACE = {
+  roll: 700, phase: 900, turnStart: 1000, halfTurn: 900, decision: 3000,
+};
+let SPEED = 1;
+
+function speedFactor() {
+  if (SPEED >= 2) return 0.5;
+  if (SPEED <= 0.5) return 1.6;
+  return 1.0;
+}
+
+async function paceWait(kind) {
+  const ms = (PACE[kind] || 0) * speedFactor();
+  if (ms > 0) await sleep(ms);
+}
+
+function clearRollHighlight() {
+  document.querySelectorAll('.dice-face-wrapper.rolled')
+    .forEach((el) => el.classList.remove('rolled'));
+}
+
+/** 高亮本回合/本次投掷抽到的骰面（根据对局记录） */
+function highlightRecentRoll(game) {
+  clearRollHighlight();
+  const ev = game.events;
+  for (let i = ev.length - 1; i >= 0; i--) {
+    const m = /第(\d+)次投掷：左\[(.+?)\] 右\[(.+?)\]/.exec(ev[i][2]);
+    if (m) {
+      document.querySelectorAll('.dice-face-wrapper').forEach((el) => {
+        const side = el.dataset.die;
+        const idx = parseInt(el.dataset.idx, 10);
+        const face = side === 'left' ? game.left[idx] : game.right[idx];
+        if (face === (side === 'left' ? m[2] : m[3])) el.classList.add('rolled');
+      });
+      break;
+    }
+  }
+}
+
+/* ------------------------------ 小工具 ------------------------------ */
+const $ = (id) => document.getElementById(id);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const faceName = (f) => f;
+
+function toast(msg, ms = 2200) {
+  const el = document.createElement('div');
+  el.className = 'toast-item';
+  el.textContent = msg;
+  $('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), ms);
+}
+
+function logLine(text, cls = '') {
+  const body = $('logBody');
+  const div = document.createElement('div');
+  if (cls) div.className = cls;
+  div.textContent = text;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+
+/* ------------------------------ 骰面渲染 ------------------------------ */
+function resourceCircle(kind, val, small) {
+  const size = small ? ' small' : '';
+  const cls = { red: 'red-face', blue: 'blue-face', coin: 'coin-face', score: 'score-face' }[kind];
+  const label = `${val}${kind === 'red' ? '红' : kind === 'blue' ? '蓝' : kind === 'coin' ? '金' : '分'}`;
+  return `<div class="face-circle ${cls}${size}">${label}</div>`;
+}
+
+function faceHTML(name) {
+  const f = FACES[name];
+  if (!f) return `<div class="face-square">？</div>`;
+  if (f.type === 'triple') return `<div class="face-square">X3</div>`;
+  if (f.type === 'choice') {
+    const opts = f.options.map((o) => {
+      const parts = [];
+      if (o[0]) parts.push(resourceCircle('red', o[0], true));
+      if (o[1]) parts.push(resourceCircle('blue', o[1], true));
+      if (o[2]) parts.push(resourceCircle('coin', o[2], true));
+      return parts.join('');
+    }).join('');
+    return `<div style="display:flex;flex-direction:column;gap:2px">${opts}</div>`;
+  }
+  const [r, b, c, s] = f.effect;
+  const parts = [];
+  if (r) parts.push(resourceCircle('red', r, true));
+  if (b) parts.push(resourceCircle('blue', b, true));
+  if (c) parts.push(resourceCircle('coin', c, true));
+  if (s) parts.push(resourceCircle('score', s, true));
+  if (parts.length === 1) return parts[0];
+  return `<div class="face-multi">${parts.join('')}</div>`;
+}
+
+function renderDice() {
+  const g = APP.game;
+  const build = (arr, side) => arr.map((face, i) =>
+    `<div class="dice-face-wrapper" data-die="${side}" data-idx="${i}" id="${side === 'left' ? 'lw' : 'rw'}${i}">${faceHTML(face)}</div>`
+  ).join('');
+  $('leftDiceFaces').innerHTML = build(g.left, 'left');
+  $('rightDiceFaces').innerHTML = build(g.right, 'right');
+}
+
+function renderStatus() {
+  const g = APP.game;
+  $('turnInfo').textContent = `📅 第 ${g.turn}/9 回合`;
+  const phaseLabel = {
+    roll: '🎲 掷骰', support: '🛡️ 支援', main: '📌 主要行动',
+    extra: '➕ 额外行动', end: '🏁 结算',
+  }[g.phase] || g.phase;
+  $('phaseBadge').textContent = phaseLabel;
+  $('scoreDisplay').textContent = `⭐ 分数：${g.score}`;
+  const items = [
+    `<span class="resource-item resource-red">🔴 红色：<span class="resource-value">${g.red}</span><span class="resource-cap">/${g.redCap}</span></span>`,
+    `<span class="resource-item resource-blue">🔵 蓝色：<span class="resource-value">${g.blue}</span><span class="resource-cap">/${g.blueCap}</span></span>`,
+    `<span class="resource-item resource-coin">💰 金币：<span class="resource-value">${g.coin}</span><span class="resource-cap">/${g.coinCap}</span></span>`,
+  ];
+  if (g.hammerCap > 0) {
+    items.push(`<span class="resource-item resource-hammer">🔨 锤子：<span class="resource-value">${g.hammerTrack}</span><span class="resource-cap">/${g.hammerCap}</span></span>`);
+  }
+  $('resourcesPanel').innerHTML = items.join('');
+  const counts = {};
+  for (const h of g.heroesBought) counts[h] = (counts[h] || 0) + 1;
+  const heroStr = Object.keys(counts).length
+    ? Object.entries(counts).map(([n, c]) => `${n}×${c}`).join('、') : '无';
+  $('supportBar').innerHTML = `🛡️ 已购英雄：<b>${heroStr}</b>　｜　`
+    + `🛡️ 本回合可用支援：<b>${g.supportPool.length ? g.supportPool.join('、') : '无'}</b>`;
+  renderDice();
+}
+
+/* ------------------------------ 动作标签（横幅/日志共用） ------------------------------ */
+function actionLabel(dtype, action, ctx, game) {
+  if (dtype === 'main' || dtype === 'extra') {
+    return ['🏪 进入骰面商店', '🦸 购买英雄卡牌', '⏭️ 跳过'][action] || String(action);
+  }
+  if (dtype === 'shop_item') {
+    if (action === 16) return '✅ 结束购买';
+    const it = SHOP_ITEMS[action];
+    return `🛒 购买「${it.face}」（${it.price} 金币）`;
+  }
+  if (dtype === 'shop_place') {
+    const face = (ctx && ctx.item_face) || '骰面';
+    return `📍 把「${face}」放到${action < 6 ? '左' : '右'}骰第 ${action % 6 + 1} 面`;
+  }
+  if (dtype === 'hero') {
+    if (action === 15) return '❌ 取消购买英雄';
+    const h = HEROES[action];
+    const cost = Object.entries(h.cost).map(([k, v]) => `${v}${k === 'red' ? '红' : '蓝'}`).join('+');
+    return `🦸 购买英雄「${h.name}」（${cost}，⭐${h.score}）`;
+  }
+  if (dtype === 'support') {
+    return action === 3 ? '⏭️ 结束支援阶段' : `✨ 发动支援：${SUPPORT_HEROES[action]}`;
+  }
+  if (dtype === 'die') return action === 0 ? '🎲 选择左骰单独投掷' : '🎲 选择右骰单独投掷';
+  if (dtype === 'owl') return `🦉 猫头鹰选择：${['🔴 1 红', '🔵 1 蓝', '💰 1 金币'][action]}`;
+  if (dtype === 'choice') {
+    const opt = ctx && ctx.options ? ctx.options[action] : null;
+    if (opt) {
+      const parts = [];
+      if (opt[0]) parts.push(`${opt[0]} 红`);
+      if (opt[1]) parts.push(`${opt[1]} 蓝`);
+      if (opt[2]) parts.push(`${opt[2]} 金币`);
+      return `🎯 三选一：选 ${parts.join(' + ')}`;
+    }
+    return `🎯 三选一：选项 ${action + 1}`;
+  }
+  if (dtype === 'hammer') return `⛏️ 把 ${action} 枚金币转化为锤子进度`;
+  if (dtype === 'helm') return `🪖 头盔：把${action < 6 ? '左' : '右'}骰第 ${action % 6 + 1} 面改成三倍(X3)`;
+  return `${dtype}:${action}`;
+}
+
+/* ------------------------------ 通用弹窗（可隐藏/恢复） ------------------------------ */
+let RESTORE_BTN = null;
+
+function closeModals() {
+  $('modalContainer').innerHTML = '';
+  if (RESTORE_BTN && RESTORE_BTN.parentNode) RESTORE_BTN.remove();
+  RESTORE_BTN = null;
+}
+
+/** 显示弹窗，并自动加一个「−」隐藏按钮（隐藏后出现「↖ 恢复选项」） */
+function showModal(html) {
+  closeModals();
+  $('modalContainer').innerHTML = `<div class="modal-overlay"><div class="modal">${html}</div></div>`;
+  const overlay = $('modalContainer').firstElementChild;
+  const modal = overlay.querySelector('.modal');
+  const hideBtn = document.createElement('div');
+  hideBtn.className = 'modal-hide-btn';
+  hideBtn.title = '隐藏弹窗（可从左下角恢复）';
+  hideBtn.textContent = '−';
+  modal.appendChild(hideBtn);
+
+  const restore = document.createElement('div');
+  restore.className = 'modal-restore-btn';
+  restore.textContent = '↖ 恢复选项';
+  restore.style.display = 'none';
+  document.body.appendChild(restore);
+  RESTORE_BTN = restore;
+
+  hideBtn.onclick = () => { overlay.style.display = 'none'; restore.style.display = 'block'; };
+  restore.onclick = () => { overlay.style.display = 'flex'; restore.style.display = 'none'; };
+  return overlay;
+}
+
+/** 骰面选择模式：高亮所有骰面并接管点击（等价于原版的 setSelectableMode） */
+function setSelectableMode(enabled, callback) {
+  document.querySelectorAll('.dice-face-wrapper').forEach((el) => {
+    if (enabled) {
+      el.classList.add('selectable');
+      el.onclick = function (ev) {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        callback(el.dataset.die, parseInt(el.dataset.idx, 10));
+      };
+    } else {
+      el.classList.remove('selectable');
+      el.onclick = null;
+    }
+  });
+  const hint = $('selectHint');
+  if (hint) hint.classList.toggle('hidden', !enabled);
+}
+
+/** 自动隐藏当前弹窗（需要点击骰子的场合使用），并保证「↖ 恢复选项」可用 */
+function autoHideModal() {
+  const overlay = doc_overlay();
+  if (overlay) overlay.style.display = 'none';
+  showRestoreBtn();
+}
+
+function doc_overlay() {
+  const c = $('modalContainer');
+  return c ? c.querySelector('.modal-overlay') : null;
+}
+
+function showRestoreBtn() {
+  if (RESTORE_BTN && RESTORE_BTN.parentNode) { RESTORE_BTN.style.display = 'block'; return; }
+  const restore = document.createElement('div');
+  restore.className = 'modal-restore-btn';
+  restore.textContent = '↖ 恢复选项';
+  document.body.appendChild(restore);
+  RESTORE_BTN = restore;
+  restore.onclick = () => {
+    const ov = doc_overlay();
+    if (ov) ov.style.display = 'flex';
+    restore.style.display = 'none';
+  };
+}
+
+/* ------------------------------ 人类智能体 ------------------------------ */
+class HumanAgent {
+  constructor(onDecision) { this.onDecision = onDecision; }
+  credit() {}
+
+  async decide(vec, mask, game) {
+    const dtype = game.dtype;
+    const [off] = SEG_OFFSET[dtype];
+    const legal = [];
+    for (let i = 0; i < mask.length; i++) if (mask[i] === 1) legal.push(i - off);
+    let local;
+    if (dtype === 'main' || dtype === 'extra') local = await this.askAction(legal, dtype);
+    else if (dtype === 'shop_item') local = await this.askShopItem(legal, game);
+    else if (dtype === 'shop_place') local = await this.askShopPlace(game);
+    else if (dtype === 'hero') local = await this.askHero(legal, game);
+    else if (dtype === 'support') local = await this.askSupport(legal, game);
+    else if (dtype === 'die') local = await this.askDie(game);
+    else if (dtype === 'owl') local = await this.askOwl();
+    else if (dtype === 'choice') local = await this.askChoice(game);
+    else if (dtype === 'hammer') local = await this.askHammer(game);
+    else if (dtype === 'helm') local = await this.askHelm(game);
+    else local = legal[0];
+    if (this.onDecision) this.onDecision(dtype, local, game);
+    return off + local;
+  }
+
+  askAction(legal, dtype) {
+    return new Promise((resolve) => {
+      const labels = { 0: ['🏪 进入骰面商店', '花金币买骰面替换到骰子上'], 1: ['🦸 购买英雄卡牌', '用红/蓝资源换英雄与分数'], 2: ['⏭️ 跳过', '结束本阶段'] };
+      const cards = legal.map((i) => `<div class="choice-card" data-i="${i}">
+        <div class="big">${labels[i][0]}</div><div class="sub">${labels[i][1]}</div></div>`).join('');
+      const ov = showModal(`<h3>${dtype === 'extra' ? '额外行动阶段' : '主要行动阶段'}</h3>
+        <div class="hint">选择一个行动（每次进入只能执行一个）</div>
+        <div class="choices">${cards}</div>`);
+      ov.querySelectorAll('.choice-card').forEach((el) => {
+        el.onclick = () => { const i = +el.dataset.i; closeModals(); resolve(i); };
+      });
+    });
+  }
+
+  askShopItem(legal, game) {
+    return new Promise((resolve) => {
+      const cards = legal.map((i) => {
+        if (i === 16) return `<div class="choice-card" data-i="16"><div class="big">✅ 结束购买</div><div class="sub">离开商店</div></div>`;
+        const it = SHOP_ITEMS[i];
+        const limited = it.limited ? '（限购 1 次）' : '';
+        const afford = game.coin >= it.price;
+        return `<div class="choice-card ${afford ? '' : 'disabled'}" data-i="${i}">
+          <div style="display:flex;justify-content:center;margin-bottom:4px">${faceHTML(it.face)}</div>
+          <div class="big">${it.face}</div>
+          <div class="sub">💰${it.price} ${limited}</div></div>`;
+      }).join('');
+      const ov = showModal(`<h3>🏪 骰面商店</h3>
+        <div class="hint">当前金币 ${game.coin}／${game.coinCap}；同一访问内每种限购一次</div>
+        <div class="choices">${cards}</div>`);
+      ov.querySelectorAll('.choice-card').forEach((el) => {
+        el.onclick = () => { const i = +el.dataset.i; closeModals(); resolve(i); };
+      });
+    });
+  }
+
+  askShopPlace(game) {
+    return new Promise((resolve) => {
+      const it = game.ctx && game.ctx.item_face;
+      const ov = showModal(`<h3>📍 选择要替换的骰面位</h3>
+        <div class="hint">已自动隐藏弹窗：请直接点击左右骰子上的骰面，把「${it}」放上去
+          （需要重新看选项时点左下角「↖ 恢复选项」）</div>
+        <div class="choices"><div class="choice-card" data-i="-1">
+          <div class="big">↩ 取消本次购买</div><div class="sub">不花金币，留在商店</div></div></div>`);
+      let done = false;
+      const finish = (i) => {
+        if (done) return;
+        done = true;
+        setSelectableMode(false, null);
+        closeModals();
+        resolve(i);                 // i < 0 表示取消本次购买
+      };
+      setSelectableMode(true, (die, idx) => {
+        if (die !== 'left' && die !== 'right') return;
+        finish(die === 'left' ? idx : 6 + idx);
+      });
+      ov.querySelector('.choice-card').onclick = () => finish(-1);
+      /* 自动隐藏弹窗，让骰面立即可点（比手动按「−」更顺手） */
+      autoHideModal();
+    });
+  }
+
+  askHero(legal, game) {
+    return new Promise((resolve) => {
+      const rows = legal.map((i) => {
+        if (i === 15) return `<div class="hero-card-item" data-i="15"><b>❌ 取消购买</b></div>`;
+        const h = HEROES[i];
+        const cost = Object.entries(h.cost).map(([k, v]) => `${v}${k === 'red' ? '红' : '蓝'}`).join(' + ');
+        const eff = {
+          support: '支援型：每回合可发动一次', immediate: '立即效果：购买后立刻结算',
+          none: '无效果（纯分数）',
+        }[h.effect];
+        const can = game.canPay(h.cost);
+        return `<div class="hero-card-item ${can ? '' : 'disabled'}" data-i="${i}">
+          <div style="min-width:96px"><b>${h.name}</b><div class="hero-desc">⭐${h.score}</div></div>
+          <div><div>费用：${cost}</div><div class="hero-desc">${eff}</div></div></div>`;
+      }).join('');
+      const ov = showModal(`<h3>🦸 购买英雄</h3>
+        <div class="hint">当前红 ${game.red}／${game.redCap}，蓝 ${game.blue}／${game.blueCap}</div>
+        <div class="hero-list">${rows}</div>`);
+      ov.querySelectorAll('.hero-card-item').forEach((el) => {
+        el.onclick = () => { const i = +el.dataset.i; closeModals(); resolve(i); };
+      });
+    });
+  }
+
+  askSupport(legal, game) {
+    return new Promise((resolve) => {
+      const desc = {
+        '长老': '支付 3 金币 → 获得 4 分',
+        '银鹿': '选择一侧骰子单独投掷一次',
+        '猫头鹰': '三选一获得 1 红 / 1 蓝 / 1 金币',
+      };
+      const cards = legal.map((i) => {
+        if (i === 3) return `<div class="choice-card" data-i="3"><div class="big">⏭️ 结束支援</div><div class="sub">进入主要行动阶段</div></div>`;
+        const n = SUPPORT_HEROES[i];
+        const dis = (n === '长老' && game.coin < 3);
+        return `<div class="choice-card ${dis ? 'disabled' : ''}" data-i="${i}">
+          <div class="big">✨ ${n}</div><div class="sub">${desc[n]}<br>剩余次数：${game.supportPool.filter(x => x === n).length}</div></div>`;
+      }).join('');
+      const ov = showModal(`<h3>🛡️ 支援阶段</h3>
+        <div class="hint">可任意顺序发动支援能力，也可以直接结束</div>
+        <div class="choices">${cards}</div>`);
+      ov.querySelectorAll('.choice-card').forEach((el) => {
+        el.onclick = () => { const i = +el.dataset.i; closeModals(); resolve(i); };
+      });
+    });
+  }
+
+  askDie(game) {
+    return new Promise((resolve) => {
+      const ov = showModal(`<h3>🎲 选择要单独投掷的骰子</h3>
+        <div class="hint">单独投掷会立刻结算抽到的骰面</div>
+        <div class="choices">
+          <div class="choice-card" data-i="0"><div class="big">左骰子</div><div class="sub">${game.left.join(' / ')}</div></div>
+          <div class="choice-card" data-i="1"><div class="big">右骰子</div><div class="sub">${game.right.join(' / ')}</div></div>
+        </div>`);
+      ov.querySelectorAll('.choice-card').forEach((el) => {
+        el.onclick = () => { const i = +el.dataset.i; closeModals(); resolve(i); };
+      });
+    });
+  }
+
+  askOwl() {
+    return new Promise((resolve) => {
+      const ov = showModal(`<h3>🦉 猫头鹰：三选一</h3>
+        <div class="choices">
+          <div class="choice-card" data-i="0"><div class="big">🔴 1 红</div></div>
+          <div class="choice-card" data-i="1"><div class="big">🔵 1 蓝</div></div>
+          <div class="choice-card" data-i="2"><div class="big">💰 1 金币</div></div>
+        </div>`);
+      ov.querySelectorAll('.choice-card').forEach((el) => {
+        el.onclick = () => { resolve(+el.dataset.i); closeModals(); };
+      });
+    });
+  }
+
+  askChoice(game) {
+    return new Promise((resolve) => {
+      const ctx = game.ctx;
+      const ops = ctx.options;
+      const cards = ops.map((o, i) => {
+        const parts = [];
+        if (o[0]) parts.push(`<span style="color:var(--red-resource)">🔴 ${o[0]}</span>`);
+        if (o[1]) parts.push(`<span style="color:#8098e0">🔵 ${o[1]}</span>`);
+        if (o[2]) parts.push(`<span style="color:var(--gold)">💰 ${o[2]}</span>`);
+        return `<div class="choice-card" data-i="${i}"><div class="big">${parts.join(' + ')}</div></div>`;
+      }).join('');
+      const mult = ctx.mult > 1 ? `（×${ctx.mult} 三倍）` : '';
+      const ov = showModal(`<h3>🎯 三选一骰面${mult}</h3>
+        <div class="hint">选择本次获得的资源</div><div class="choices">${cards}</div>`);
+      ov.querySelectorAll('.choice-card').forEach((el) => {
+        el.onclick = () => { resolve(+el.dataset.i); closeModals(); };
+      });
+    });
+  }
+
+  askHammer(game) {
+    return new Promise((resolve) => {
+      const ctx = game.ctx;
+      const maxConv = ctx.max_conv;
+      const cv = ctx.coins_gained;
+      const cards = [];
+      for (let i = 0; i <= maxConv; i++) {
+        cards.push(`<div class="hammer-choice-card" data-i="${i}">
+          <span class="hammer-hammer">🔨 +${i}</span>
+          <span class="hammer-plus">＋</span>
+          <span class="hammer-coin">💰 +${cv - i}</span></div>`);
+      }
+      const ov = showModal(`<h3>⛏️ 金币转化为锤子进度</h3>
+        <div class="hint">本次获得 ${cv} 金币；轨道可再容纳 ${maxConv} 点。每满 15 点立刻得分（15→10分，30→15分）</div>
+        <div class="hammer-choices">${cards.join('')}</div>`);
+      ov.querySelectorAll('.hammer-choice-card').forEach((el) => {
+        el.onclick = () => { resolve(+el.dataset.i); closeModals(); };
+      });
+    });
+  }
+
+  askHelm(game) {
+    return new Promise((resolve) => {
+      const ov = showModal(`<h3>🪖 隐形头盔：选择要改成三倍(X3)的骰面位</h3>
+        <div class="hint">已自动隐藏弹窗：请直接点击要改的骰面（可点左下角「↖ 恢复选项」看说明）</div>
+        <div class="choices"><div class="choice-card" data-i="-1">
+          <div class="big">↩ 看看选项</div><div class="sub">恢复弹窗</div></div></div>`);
+      let done = false;
+      const finish = (i) => {
+        if (done) return;
+        done = true;
+        setSelectableMode(false, null);
+        closeModals();
+        resolve(i);
+      };
+      setSelectableMode(true, (die, idx) => {
+        if (die !== 'left' && die !== 'right') return;
+        finish(die === 'left' ? idx : 6 + idx);
+      });
+      ov.querySelector('.choice-card').onclick = () => showRestoreBtn();
+      autoHideModal();
+    });
+  }
+}
+
+/* ------------------------------ 对局驱动 ------------------------------ */
+function resetScreen() {
+  $('logBody').innerHTML = '';
+  $('aiBanner').classList.add('hidden');
+  closeModals();
+  setSelectableMode(false, null);
+  clearRollHighlight();
+}
+
+async function startHumanGame() {
+  APP.weights = APP.weights || await loadWeights();
+  const scenario = APP.scenarios[Math.floor(Math.random() * APP.scenarios.length)];
+  resetScreen();
+  $('menuScreen').classList.add('hidden');
+  $('settleScreen').classList.add('hidden');
+  $('gameScreen').classList.remove('hidden');
+
+  /* 人类场景：牌堆由 scenarios.json 固定；投掷序列预生成（600 次足够覆盖英雄/支援的额外投掷）。
+     第 0 条为占位洗牌记录（构造 Game 时 reset 会消费它；play(startTurn=1) 不再重复 reset）。 */
+  const draws = [['s', 12, scenario.left.concat(scenario.right)]]
+    .concat(scenario.rolls.map((v) => ['i', 6, v]));
+  const game = new Game(draws, { left: scenario.left, right: scenario.right, log: false,
+    onEvent: (text, g) => { logLine(text, text.startsWith('════') ? 'turn-line' : ''); renderStatus(); } });
+  APP.game = game;
+  APP.running = true;
+  const agent = new HumanAgent((dtype, action, g) => {
+    logLine(`🧑 你选择：${actionLabel(dtype, action, g.ctx, g)}`, '');
+  });
+  renderStatus();
+  toast('人类游玩开始：完成 9 个回合');
+  try {
+    await game.play(agent, 1, {   // startTurn=1：复用构造函数里的 reset
+      onEvent: async (text, g) => {        // 投掷节奏：每次投掷后停 0.7 秒
+        const m = /第(\d+)次投掷/.exec(text);
+        if (!m) return;
+        highlightRecentRoll(g);
+        await paceWait('roll');
+        clearRollHighlight();
+      },
+      onTurnEnd: () => paceWait('halfTurn'),
+    });
+  } catch (e) {
+    console.error(e);
+    toast('游戏中出现异常：' + e.message);
+  }
+  APP.running = false;
+  clearRollHighlight();
+  await showSettle(game, game.score + game.heroesBought.reduce((s, h) => s + HERO_SCORE[h], 0),
+    { mode: '人类游玩' });
+}
+
+async function startAIDemo() {
+  APP.weights = APP.weights || await loadWeights();
+  const pool = (APP.aiScenarios && APP.aiScenarios.length) ? APP.aiScenarios : APP.scenarios;
+  const sc = pool[Math.floor(Math.random() * pool.length)];
+  resetScreen();
+  $('menuScreen').classList.add('hidden');
+  $('settleScreen').classList.add('hidden');
+  $('gameScreen').classList.remove('hidden');
+
+  /* 与人类游玩同构：第 0 条为占位洗牌记录（构造函数消费一次），
+     play(startTurn=1) 不再重复 reset */
+  const draws = [['s', 12, sc.left.concat(sc.right)]]
+    .concat(sc.rolls.map((v) => ['i', 6, v]));
+  const game = new Game(draws, { left: sc.left, right: sc.right, log: false,
+    onEvent: (text, g) => { logLine(text, text.startsWith('════') ? 'turn-line' : ''); renderStatus(); } });
+  APP.game = game;
+
+  const depth = APP.searchDepth || 12;
+  const topk = APP.searchTopk || 4;
+  const agent = new SearchAgent(APP.weights, {
+    depth, topk,
+    onDecision: async (dtype, vec, mask, g) => {
+      const ev = agent.lastEval || { candidates: [] };
+      let detail = '';
+      if (ev.searched && ev.candidates && ev.candidates.length) {
+        const { logits } = policyForward(APP.weights, vec);
+        const probs = maskedProbs(logits, mask);
+        const [off] = SEG_OFFSET[dtype];
+        const rows = ev.candidates.slice().sort((a, b) => b.value - a.value).map((c) =>
+          `${c.action === ev.action ? '<b>' : ''}${actionLabel(dtype, c.action, g.ctx, g)}`
+          + ` → 估值 <b>${c.value.toFixed(1)}</b>（策略概率 ${(probs[off + c.action] * 100).toFixed(1)}%）`
+          + `${c.action === ev.action ? '</b>' : ''}`);
+        detail = `🔎 现场搜索了 ${ev.candidates.length} 个候选（depth ${depth} × top-${topk}，`
+          + `累计 ${agent.nSim} 次模拟）：<br>` + rows.join('<br>');
+      } else {
+        const vLeaf = valueForward(APP.weights, vec);
+        detail = `战术决策由策略网直接给出 ｜ 价值网 V(s) ≈ <b>${vLeaf.toFixed(1)}</b> 分`;
+      }
+      const label = actionLabel(dtype, ev.action, g.ctx, g);
+      showBanner(TYPE_LABEL[dtype] || dtype, label, detail);
+      logLine(`🤖 AI（${TYPE_LABEL[dtype] || dtype}）：${label}`, 'ai-line');
+      await waitBanner();
+    },
+    onSlow: (ms) => toast(`本步搜索较慢（${(ms / 1000).toFixed(1)} 秒），已自动降低等待`, 2600),
+  });
+
+  renderStatus();
+  toast(`AI 实时演示开始：全新随机局面（第 ${sc.id + 1} 号盘）`);
+  APP.liveAgent = agent;            // 便于自检/调试查看搜索统计
+  try {
+    await game.play(agent, 1, {     // startTurn=1：复用构造函数里的 reset（不再消费随机流）
+      onEvent: async (text, g) => {      // 掷骰 / 阶段切换的节奏
+        if (text.startsWith('════')) { await paceWait('turnStart'); return; }
+        const m = /第(\d+)次投掷/.exec(text);
+        if (m) {
+          highlightRecentRoll(g);
+          await paceWait(m[1] === '2' ? 'halfTurn' : 'roll');
+          clearRollHighlight();
+          return;
+        }
+        if (text.startsWith('📌') || text.startsWith('➕') || text.startsWith('🛡️')
+            || text.startsWith('🏪') || text.startsWith('🏁')) {
+          await paceWait('phase');
+        }
+      },
+      onTurnEnd: () => paceWait('halfTurn'),
+    });
+  } catch (e) {
+    console.error(e);
+    toast('AI 演示出现异常：' + e.message);
+  }
+  APP.running = false;
+  clearRollHighlight();
+  const total = game.score + game.heroesBought.reduce((s, h) => s + HERO_SCORE[h], 0);
+  await showSettle(game, total, {
+    mode: 'AI 实时演示', live: true,
+    pieces: game.nDecisions, sims: agent.nSim,
+  });
+}
+
+/* AI 决策横幅：保证每条横幅至少完整展示一段时间（避免连续决策把横幅瞬间刷掉） */
+let BANNER_SHOWN_AT = 0;
+let LAST_BANNER_TEXT = '';
+
+function showBanner(type, action, detail) {
+  LAST_BANNER_TEXT = String(action);
+  $('aiType').textContent = type;
+  $('aiAction').textContent = action;
+  $('aiDetail').innerHTML = detail || '';
+  $('aiBanner').classList.remove('hidden');
+  BANNER_SHOWN_AT = Date.now();
+}
+function hideBanner() { $('aiBanner').classList.add('hidden'); }
+
+/** 横幅展示节奏：标准档每条停留 3 秒（×速度倍率），多个决策连发时每条都完整可见 */
+async function waitBanner(holdMs) {
+  const hold = (holdMs || PACE.decision) * speedFactor();
+  const shownFor = Date.now() - BANNER_SHOWN_AT;
+  if (shownFor < hold) await sleep(hold - shownFor);
+  hideBanner();
+  await sleep(200 * speedFactor());     // 收起后留出一点间隔，视觉上更清楚
+}
+
+/* ------------------------------ 结算界面 ------------------------------ */
+async function showSettle(game, total, opts) {
+  APP.lastSummary = { game, total, opts };
+  $('gameScreen').classList.add('hidden');
+  $('settleScreen').classList.remove('hidden');
+  const heroTotal = game.heroesBought.reduce((s, h) => s + HERO_SCORE[h], 0);
+  $('settleTitle').textContent = `🏁 ${opts.mode} · 终局结算`;
+  $('settleTotal').textContent = total;
+  $('settleFormula').innerHTML = `游戏过程分 <b>${game.score}</b> ＋ 英雄分 <b>${heroTotal}</b>`
+    + `　（共 ${game.heroesBought.length} 个英雄，9 个回合）`;
+  const cell = (label, value, color) =>
+    `<div class="resource-item" style="background:#16233a;color:${color || '#dfe9f3'}">${label}：<b>${value}</b></div>`;
+  $('settleGrid').innerHTML = [
+    cell('🔴 红色', `${game.red}/${game.redCap}`, 'var(--red-resource)'),
+    cell('🔵 蓝色', `${game.blue}/${game.blueCap}`, '#8098e0'),
+    cell('💰 金币', `${game.coin}/${game.coinCap}`, 'var(--gold)'),
+    game.hammerCap > 0 ? cell('🔨 锤子', `${game.hammerTrack}/${game.hammerCap}`, '#c0a0d0') : '',
+    cell('⭐ 过程分', game.score, 'var(--score-green-light)'),
+  ].join('');
+  const heroCounts = {};
+  for (const h of game.heroesBought) heroCounts[h] = (heroCounts[h] || 0) + 1;
+  $('settleHeroes').innerHTML = `🎲 最终骰面：左 [${game.left.join(' | ')}]　右 [${game.right.join(' | ')}]<br>`
+    + `🏆 已购英雄：${Object.keys(heroCounts).length
+      ? Object.entries(heroCounts).map(([n, c]) => `${n}${c > 1 ? '×' + c : ''}(⭐${HERO_SCORE[n] * c})`).join('、')
+      : '无'}`;
+  const cmp = [
+    `本局：<b>${total}</b> 分`,
+    `AI（v9 搜索口径）历史均值 <b>${STATS.aiSearchMean}</b>（${STATS.aiSearchN} 局独立种子）`,
+    `人类专家 50 局均值 ${STATS.humanExpert}　·　启发式基线 ${STATS.heuristic}　·　随机基线 ${STATS.random}`,
+  ];
+  if (opts.live) {
+    cmp.push(`本局为 **实时决策**：AI 面对全新随机局面现场搜索（depth ${APP.searchDepth || 12} × `
+      + `top-${APP.searchTopk || 4}），共 <b>${opts.pieces}</b> 个决策、<b>${opts.sims}</b> 次模拟，`
+      + `全部在浏览器内完成（无回放、无联网）`);
+  } else if (opts.recorded != null) {
+    cmp.push(`本局离线评估成绩：<b>${opts.recorded}</b> 分`
+      + (total === opts.recorded ? '（与网页端复现完全一致 ✅）' : `（网页端复现 ${total}）`));
+  }
+  $('settleCompare').innerHTML = cmp.join('<br>');
+}
+
+/* ------------------------------ 菜单与自检 ------------------------------ */
+async function init() {
+  const E = window.__DSH_EMBED__;
+  APP.scenarios = (E && E.scenarios && E.scenarios.scenarios) || [];
+  APP.demos = (E && E.demoGames && E.demoGames.games) || [];
+  const demo = (E && E.demoGames) || {};
+  APP.searchDepth = (demo.search && demo.search.depth) || 12;
+  APP.searchTopk = (demo.search && demo.search.topk) || 4;
+  /* AI 实时演示用的随机场景（离线版从内嵌数据取；静态目录版尝试读取 JSON） */
+  APP.aiScenarios = [];
+  if (typeof window !== 'undefined' && window.__DSH_EMBED__ && window.__DSH_EMBED__.aiScenarios) {
+    APP.aiScenarios = window.__DSH_EMBED__.aiScenarios.scenarios || [];
+  } else {
+    try {
+      const ai = await (await fetch('data/ai_scenarios.json')).json();
+      APP.aiScenarios = ai.scenarios || [];
+    } catch (e) { APP.aiScenarios = []; }
+  }
+  $('btnHuman').onclick = () => startHumanGame().catch((e) => toast('启动失败：' + e.message));
+  $('btnAI').onclick = () => startAIDemo().catch((e) => toast('启动失败：' + e.message));
+  $('btnQuit').onclick = () => backToMenu();
+  $('btnBackMenu').onclick = () => backToMenu();
+  $('btnExplain').onclick = () => $('explainBox').classList.toggle('hidden');
+  $('btnCheck').classList.add('hidden');       // 离线版仅面向展示，隐藏开发者自检
+  $('btnCheck').onclick = () => runSelfCheck();
+  /* 演示速度切换（两种模式都生效） */
+  const setSpeed = (v, btn) => {
+    SPEED = v;
+    ['spdSlow', 'spdNormal', 'spdFast'].forEach((id) => $(id).classList.remove('active'));
+    $(btn).classList.add('active');
+    toast(v >= 2 ? '演示速度：快（×0.6 等待）' : v <= 0.5 ? '演示速度：慢（×1.6 等待）' : '演示速度：标准');
+  };
+  $('spdSlow').onclick = () => setSpeed(0.5, 'spdSlow');
+  $('spdNormal').onclick = () => setSpeed(1, 'spdNormal');
+  $('spdFast').onclick = () => setSpeed(2, 'spdFast');
+}
+
+function backToMenu() {
+  if (APP.running) { toast('对局仍在进行，已中止'); APP.running = false; }
+  hideBanner(); closeModals(); setSelectableMode(false, null); clearRollHighlight();
+  $('gameScreen').classList.add('hidden');
+  $('settleScreen').classList.add('hidden');
+  $('menuScreen').classList.remove('hidden');
+}
+
+/* 暴露应用状态（供自检脚本/调试查看；不影响正常使用） */
+window.__APP = APP;
+
+/** 自检：用当前加载的量化模型重放演示局，校验最终分数与录制一致 */
+async function runSelfCheck() {
+  const box = $('checkBox');
+  box.classList.remove('hidden');
+  box.innerHTML = '<h3>🔍 引擎与模型自检</h3><p>正在重放演示局…</p>';
+  APP.weights = APP.weights || await loadWeights();
+  const lines = [];
+  for (const demo of APP.demos.slice(0, 3)) {
+    const decisions = demo.decisions.map((d) => ({ type: d.type, action: d.action }));
+    const game = new Game(demo.draws, { log: false });
+    const agent = new ScriptedAgent(decisions, { strict: true });
+    const total = await game.play(agent);
+    const ok = total === demo.total;
+    lines.push(`第 ${demo.id + 1} 局：离线 ${demo.total} / 网页 ${total} → ${ok ? '✅' : '❌'}`
+      + `（${decisions.length} 个决策）`);
+  }
+  const w = APP.weights.meta;
+  box.innerHTML = `<h3>🔍 引擎与模型自检</h3>`
+    + lines.map((l) => `<div>${l}</div>`).join('')
+    + `<div style="margin-top:8px;color:#9fb3c8">量化：${w.quant.type}　｜　`
+    + `策略网 ${w.policy.layers.map(l => `${l.in}→${l.out}`).join(' → ')}　｜　`
+    + `价值网 ${w.value.layers.map(l => `${l.in}→${l.out}`).join(' → ')}</div>`;
+}
+
+init().catch((e) => {
+  console.error(e);
+  document.body.insertAdjacentHTML('beforeend',
+    `<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background:#252540;color:#f88;font-size:1.1em;text-align:center;padding:30px">
+      加载失败：${e.message}<br><br>请通过本地静态服务器打开本页面
+      （例如在包目录执行 <code>python -m http.server 8000</code>，再访问 http://localhost:8000/）。
+    </div>`);
+});
+
+</script>
+</body>
+</html>
