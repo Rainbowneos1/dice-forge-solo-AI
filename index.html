@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>骰子英雄 · 150+ AI 演示</title>
+<title>骰子英雄 · AI 实时演示（合规口径 151.2 分）</title>
 <style>
 /* ============================================================================
  * 骰子英雄 · 样式（视觉风格沿用原版 index.html，新增起始界面/AI 横幅/结算）
@@ -296,7 +296,7 @@ button { font-family: inherit; }
 <div id="menuScreen" class="screen menu-screen">
   <div class="menu-card">
     <h1>🎲 骰子英雄</h1>
-    <p class="subtitle">双骰策略游戏 · 强化学习 AI v9（搜索自举训练，<b>搜索口径 150.9 分</b>）</p>
+    <p class="subtitle">双骰策略游戏 · 强化学习 AI <b>v16</b>（软标签蒸馏，<b>合规口径 151.2 分</b>）</p>
 
     <div class="menu-modes">
       <button class="mode-card" id="btnHuman">
@@ -307,25 +307,35 @@ button { font-family: inherit; }
       <button class="mode-card" id="btnAI">
         <div class="mode-icon">🤖</div>
         <div class="mode-title">AI 演示</div>
-        <div class="mode-desc">全程 AI 决策，每步展示决策横幅并暂停 1.2 秒</div>
+        <div class="mode-desc">全新随机局面现场决策，<b>浏览器内实时推理</b>，合规口径（不预知未来骰子）</div>
       </button>
     </div>
 
     <div class="offline-note">📦 离线单文件版：模型与数据已内嵌，双击本文件即可运行（无需服务器）。</div>
     <div class="menu-extra">
       <button class="ghost-btn" id="btnExplain">📖 AI 与训练说明</button>
-      <button class="ghost-btn" id="btnCheck">🔍 引擎一致性自检</button>
+      <button class="ghost-btn" id="btnCheck">🔍 引擎与模型自检</button>
     </div>
 
     <div id="explainBox" class="explain-box hidden">
       <h3>这个 AI 是怎么来的</h3>
       <ul>
-        <li><b>网络</b>：策略网 260→1024×3→94（约 246 万参数）+ 价值网 260→512×2→1（约 40 万参数）</li>
-        <li><b>训练</b>：搜索自举循环 —— 搜索智能体自对弈生成数据 → 行为克隆（BC）→ 价值网络重训 → 轻量 RL；
-          最终版本 v9 使用 50 局人类专家演示（均值 165.9）+ 3200 局自对弈数据</li>
-        <li><b>成绩</b>：搜索口径 <b>150.86</b>（525 局独立种子，标准误 0.74）；贪心口径 145.4（1000 局）；
-          人类专家 165.9；随机基线 38.8</li>
-        <li><b>推理</b>：模型权重 int8 量化（per-output-channel），网页加载时反量化为 float32 全精度推理</li>
+        <li><b>网络</b>：策略网 260→1024×3→94（约 246 万参数）。<b>合规口径不用价值网</b>
+          （决策是纯策略网 argmax）</li>
+        <li><b>训练</b>：三代演进 —— ① 搜索自举 + 行为克隆（v9 起）；
+          ② 用<b>人类专家示范</b>加权续训（v11~v12）；
+          ③ 本版 v16：先从 v11 做 20 轮行为克隆（人类示范约 21%、逐批混合），
+          再用<b>上一版冠军的概率分布</b>做<b>软标签蒸馏</b>（λ=0.5），
+          把搜索教师"单次选择"的噪声平均掉</li>
+        <li><b>成绩（合规口径，= 贪心）</b>：<b>151.20</b> 分 —— 14 组独立种子、20,400 局
+          <b>逐局配对</b>，14 组全部为正；相对旧交付 146.78 为 <b>+4.48 分（t=+28.40）</b>。
+          对照：人类专家 165.9；启发式 104.0；随机 38.8</li>
+        <li><b>合规性</b>：每次决策 = argmax(策略网(当前 260 维可观测状态))，
+          <b>不做分支模拟、不读取本局未来的随机流</b>。三条独立证据：
+          同一对局重复两遍逐决策一致；把整条未来随机流换成另一条后动作不变；
+          代码级无搜索/随机源引用</li>
+        <li><b>推理</b>：模型权重 int8 量化（per-output-channel，误差 5.8×10⁻³），
+          网页加载时反量化为 float32 做全精度推理，单步前向约 <b>11~26 ms</b></li>
         <li><b>可复现</b>：每局的牌堆与投掷序列由离线端预生成（随机数流按序消费），
           因此本页每一局的走法都与离线评估逐位一致</li>
       </ul>
@@ -367,7 +377,7 @@ button { font-family: inherit; }
       <button class="speed-btn" id="spdSlow">🐢 慢</button>
       <button class="speed-btn active" id="spdNormal">▶ 标准</button>
       <button class="speed-btn" id="spdFast">🐇 快</button>
-      <span class="speed-tip">对人类游玩与 AI 演示都生效（人类掷骰 0.7 秒 / AI 决策 1.2 秒 × 倍率）</span>
+      <span class="speed-tip">对人类游玩与 AI 演示都生效（人类掷骰 0.7 秒 / AI 决策横幅 3 秒 × 倍率）</span>
     </div>
 
     <div class="log-panel">
@@ -1211,6 +1221,13 @@ function reluInPlace(x) {
   return x;
 }
 
+/** 载入权重；返回 { meta, policy, value }，其中每项为 [{layer, name}]
+ *
+ * 支持两种存储格式（由 meta.quant.type 决定）：
+ *   'int8-per-output-channel' —— 权重存 int8 + 每输出通道一个 scale（正式版，体积小）
+ *   'none-float32'            —— 权重直接存 float32（**仅用于量化影响对照实验**）
+ * 两者在运行时都还原成 float32 做全精度推理；差别只在"存储时丢了多少精度"。
+ */
 
 /** 把内嵌的 base64 权重解码为 ArrayBuffer（等价于 fetch 回来的二进制） */
 function embeddedWeightsBuffer() {
@@ -1221,16 +1238,28 @@ function embeddedWeightsBuffer() {
   return bytes.buffer;
 }
 
-/** 载入内嵌的量化权重；返回 { meta, policy, value }，其中每项为 [{layer, name}] */
+/** 载入内嵌的权重；返回 { meta, policy, value }，其中每项为 [{layer, name}] */
 async function loadWeights() {
   const meta = window.__DSH_EMBED__.modelMeta;
   const buf = embeddedWeightsBuffer();
   const idx = meta.index;
+  const isF32 = meta.quant && meta.quant.type === 'none-float32';
 
   const sliceI8 = (name) => new Int8Array(buf, idx[name].offset, idx[name].count);
   const sliceF32 = (name) => new Float32Array(buf, idx[name].offset, idx[name].count);
 
   const build = (spec) => spec.layers.map((L) => {
+    if (isF32) {
+      const w = sliceF32(`${L.name}.f32`);
+      if (w.length !== L.in * L.out) {
+        throw new Error(`float32 权重形状不符：${L.name} ${L.in}×${L.out}，实际 ${w.length}`);
+      }
+      return {
+        name: L.name,
+        layer: new Linear(w, Float32Array.from({ length: L.out }, () => 1),
+                          Float32Array.from(L.bias), L.in, L.out),
+      };
+    }
     const q = sliceI8(`${L.name}.q`);
     const scale = sliceF32(`${L.name}.scale`);
     if (q.length !== L.in * L.out) {
@@ -1244,7 +1273,8 @@ async function loadWeights() {
       layer: new Linear(q, scale, Float32Array.from(L.bias), L.in, L.out),
     };
   });
-  return { meta, policy: build(meta.policy), value: build(meta.value) };
+  const out = { meta, policy: build(meta.policy), value: meta.value ? build(meta.value) : [] };
+  return out;
 }
 
 /** 策略网前向：返回 { logits: Float32Array(94), value: number } */
@@ -1363,15 +1393,18 @@ class SimAgent {
 }
 
 class GreedyAgent {
-  constructor(net) { this.net = net; }
+  constructor(net) { this.net = net; this.nDecisions = 0; this.totalMs = 0; }
   credit() {}
   async decide(vec, mask) {
+    const t0 = Date.now();
     const { logits } = policyForward(this.net, vec);
     let best = -1, bestP = -Infinity;
     for (let i = 0; i < logits.length; i++) {
       if (mask[i] < 0.5) continue;
       if (logits[i] > bestP) { bestP = logits[i]; best = i; }
     }
+    this.nDecisions++;
+    this.totalMs += Date.now() - t0;
     return best;
   }
 }
@@ -1430,6 +1463,9 @@ class SearchAgent {
     this.depth = options.depth != null ? options.depth : 12;
     this.topk = options.topk != null ? options.topk : 4;
     this.searchTypes = options.searchTypes || SEARCH_TYPES;
+    // forceGreedy: 合规模式 —— 不做任何分支模拟，全部决策由策略网 argmax 给出
+    // （决策只依赖当前可观测状态；见 合规性审计报告.md）
+    this.forceGreedy = !!options.forceGreedy;
     this.onDecision = options.onDecision || null;   // 供界面展示「本条决策的候选估值」
     this.onSlow = options.onSlow || null;           // 单步搜索过慢时提示界面
     this.slowThresholdMs = options.slowThresholdMs || 2500;
@@ -1469,9 +1505,11 @@ class SearchAgent {
 
   async decide(vec, mask, game) {
     const dtype = game.dtype;
-    if (!this.searchTypes.has(dtype)) {
+    if (this.forceGreedy || !this.searchTypes.has(dtype)) {
       const a = await this.greedy.decide(vec, mask, game);
-      this.lastEval = { searched: false, type: dtype, action: a - SEG_OFFSET[dtype][0] };
+      this.lastEval = { searched: false, type: dtype, action: a - SEG_OFFSET[dtype][0],
+                        ms: 0 };
+      if (this.onDecision) await this.onDecision(dtype, vec, mask, game);
       return a;
     }
     const tStart = Date.now();
@@ -1514,8 +1552,11 @@ if (typeof module !== 'undefined' && module.exports) {
  * ---------------------------------------------------------------------------
  * 两种模式：
  *   人类游玩 —— 用同一个游戏引擎 + HumanAgent（弹窗交互），走完整 9 回合；
- *   AI 演示  —— 用同一个引擎 + ScriptedAgent 回放离线录制的决策（v9_bc + v9_value_b，
- *               搜索口径 150.86），每个决策弹出横幅并暂停 1.2 秒。
+ *   AI 演示  —— 用同一个引擎 + SearchAgent，在**全新随机局面**上现场决策。
+ *               默认 `APP.compliantMode !== false` → **合规模式**：
+ *               每步只是 `argmax(策略网(当前 260 维可观测状态))`，
+ *               不做分支模拟、不读未来随机流；单步前向约 11~26 ms。
+ *               把 `APP.compliantMode` 设为 false 可切回旧的浅层搜索（**不合规**，仅作对照）。
  * 两种模式结束后都进入结算界面，并可返回初始界面。
  * ==========================================================================*/
 
@@ -1530,8 +1571,17 @@ const APP = {
 };
 
 const STATS = {
-  ai: 'v9_bc + v9_value_b', aiSearchMean: 150.86, aiSearchN: 525,
-  aiGreedyMean: 145.4, humanExpert: 165.92, random: 38.79, heuristic: 104.02,
+  ai: 'v16（final_v16.pt，软标签蒸馏）',
+  // 交付模型：合规贪心口径，14 组独立评估种子 / 20,400 局配对
+  aiCompliantMean: 151.20, aiCompliantN: 20400,
+  aiCompliantDiff: '+4.48', aiCompliantT: '+28.40',
+  // 各口径均值（数值与来源一并标注，避免"看不出是哪个版本/多少局"）
+  humanExpert: 164.77, humanExpertN: 114,     // human_demos.npz（持续增长中）
+  heuristic: 104.02, random: 38.79,
+  oldDeliverMean: 146.78, oldDeliverN: 25400, // v11_bc，被 v16 取代
+  // 历史口径（v9 搜索，**不合规**：搜索时复用了真实对局随机流），仅作对照
+  aiSearchMean: 150.86, aiSearchN: 525,
+  aiGreedyMean: 145.4,
 };
 
 /* ------------------------------ 播放节奏 ------------------------------
@@ -2083,8 +2133,9 @@ async function startAIDemo() {
 
   const depth = APP.searchDepth || 12;
   const topk = APP.searchTopk || 4;
+  const forceGreedy = APP.compliantMode !== false;   // 默认合规模式：纯策略网 argmax
   const agent = new SearchAgent(APP.weights, {
-    depth, topk,
+    depth, topk, forceGreedy,
     onDecision: async (dtype, vec, mask, g) => {
       const ev = agent.lastEval || { candidates: [] };
       let detail = '';
@@ -2098,6 +2149,15 @@ async function startAIDemo() {
           + `${c.action === ev.action ? '</b>' : ''}`);
         detail = `🔎 现场搜索了 ${ev.candidates.length} 个候选（depth ${depth} × top-${topk}，`
           + `累计 ${agent.nSim} 次模拟）：<br>` + rows.join('<br>');
+      } else if (forceGreedy) {
+        const { logits } = policyForward(APP.weights, vec);
+        const probs = maskedProbs(logits, mask);
+        const ms = APP.liveAgent && APP.liveAgent.greedy
+          ? (APP.liveAgent.greedy.totalMs / Math.max(1, APP.liveAgent.greedy.nDecisions)) : 0;
+        detail = `✅ 合规模式：仅由策略网读当前可观测状态做 argmax`
+          + `（无分支模拟、不读未来骰子）`
+          + ` ｜ 本步策略概率 <b>${(probs[ev.action + SEG_OFFSET[dtype][0]] * 100).toFixed(1)}%</b>`
+          + ` ｜ 单步实时推理 <b>${ms.toFixed(0)} ms</b>（平均）`;
       } else {
         const vLeaf = valueForward(APP.weights, vec);
         detail = `战术决策由策略网直接给出 ｜ 价值网 V(s) ≈ <b>${vLeaf.toFixed(1)}</b> 分`;
@@ -2194,13 +2254,18 @@ async function showSettle(game, total, opts) {
       : '无'}`;
   const cmp = [
     `本局：<b>${total}</b> 分`,
-    `AI（v9 搜索口径）历史均值 <b>${STATS.aiSearchMean}</b>（${STATS.aiSearchN} 局独立种子）`,
-    `人类专家 50 局均值 ${STATS.humanExpert}　·　启发式基线 ${STATS.heuristic}　·　随机基线 ${STATS.random}`,
+    `交付模型 v16（合规贪心）跨种子均值 <b>${STATS.aiCompliantMean}</b>`
+      + `（${STATS.aiCompliantN} 局配对，相对旧交付 ${STATS.oldDeliverMean} 为 `
+      + `<b>${STATS.aiCompliantDiff}</b>，t=${STATS.aiCompliantT}）`,
+    `人类专家 ${STATS.humanExpertN} 局均值 ${STATS.humanExpert}　·　启发式基线 ${STATS.heuristic}　·　随机基线 ${STATS.random}`,
   ];
   if (opts.live) {
-    cmp.push(`本局为 **实时决策**：AI 面对全新随机局面现场搜索（depth ${APP.searchDepth || 12} × `
-      + `top-${APP.searchTopk || 4}），共 <b>${opts.pieces}</b> 个决策、<b>${opts.sims}</b> 次模拟，`
-      + `全部在浏览器内完成（无回放、无联网）`);
+    const g = APP.liveAgent && APP.liveAgent.greedy;
+    const avgMs = g && g.nDecisions ? (g.totalMs / g.nDecisions) : 0;
+    cmp.push(`本局为 **实时推理**：AI 面对全新随机局面，由策略网读当前可观测状态`
+      + `逐决策现场前向（int8 权重反量化为 float32，全部在浏览器内完成，无回放、无联网），`
+      + `共 <b>${opts.pieces}</b> 个决策，平均 <b>${avgMs.toFixed(0)} ms/步</b>`
+      + `（合计 ${(g ? g.totalMs : 0)} ms）`);
   } else if (opts.recorded != null) {
     cmp.push(`本局离线评估成绩：<b>${opts.recorded}</b> 分`
       + (total === opts.recorded ? '（与网页端复现完全一致 ✅）' : `（网页端复现 ${total}）`));
@@ -2256,28 +2321,79 @@ function backToMenu() {
 /* 暴露应用状态（供自检脚本/调试查看；不影响正常使用） */
 window.__APP = APP;
 
-/** 自检：用当前加载的量化模型重放演示局，校验最终分数与录制一致 */
+/**
+ * 自检：验证「引擎保真」+「当前模型确定性与实时推理」
+ *
+ * ⚠️ 两部分要分清：
+ *   ① 引擎保真 —— 重放 `demo_games.json` 里**v9 时代录制**的决策序列，
+ *      校验网页引擎能否复现当年的总分。这验证的是**引擎**（game.js），
+ *      与当前模型的强弱无关，所以标签里会写清"v9 录制"。
+ *   ② 模型自检 —— 用**当前加载的模型**在固定场景上跑合规贪心两遍：
+ *      两次决策序列必须完全一致（确定性）；并报告单步推理耗时。
+ */
 async function runSelfCheck() {
   const box = $('checkBox');
   box.classList.remove('hidden');
-  box.innerHTML = '<h3>🔍 引擎与模型自检</h3><p>正在重放演示局…</p>';
+  box.innerHTML = '<h3>🔍 引擎与模型自检</h3><p>正在自检…</p>';
   APP.weights = APP.weights || await loadWeights();
   const lines = [];
-  for (const demo of APP.demos.slice(0, 3)) {
+
+  /* ① 引擎保真：重放 v9 录制决策 */
+  lines.push('<b>① 引擎保真</b>（重放下面的对局是 <b>v9 时代录制</b>的决策，只校验引擎）');
+  for (const demo of APP.demos.slice(0, 2)) {
     const decisions = demo.decisions.map((d) => ({ type: d.type, action: d.action }));
     const game = new Game(demo.draws, { log: false });
     const agent = new ScriptedAgent(decisions, { strict: true });
     const total = await game.play(agent);
     const ok = total === demo.total;
-    lines.push(`第 ${demo.id + 1} 局：离线 ${demo.total} / 网页 ${total} → ${ok ? '✅' : '❌'}`
-      + `（${decisions.length} 个决策）`);
+    lines.push(`　第 ${demo.id + 1} 局：v9 录制 ${demo.total} / 网页重放 ${total} → `
+      + `${ok ? '✅ 一致' : '❌ 不一致'}（${decisions.length} 个决策）`);
   }
+
+  /* ② 当前模型：确定性 + 实时推理耗时
+     注意：scenarios.json 的 rolls 是**扁平整数**，必须包成结构化随机流
+     （第 0 条是占位洗牌记录，后续 ['i',6,v]）—— 直接用 rolls 构造 Game 会报
+     "随机数流类型不符"（踩坑记录 QQ-052）。 */
+  const sc = (APP.scenarios && APP.scenarios[0]) || null;
+  if (sc) {
+    const mkDraws = () => [['s', 12, sc.left.concat(sc.right)]]
+      .concat(sc.rolls.map((v) => ['i', 6, v]));
+    const runs = [];
+    let ms = 0, n = 0;
+    for (let r = 0; r < 2; r++) {
+      const g = new Game(mkDraws(), { left: sc.left.slice(), right: sc.right.slice(),
+                                      log: false });
+      const inner = new GreedyAgent(APP.weights);
+      const seq = [];
+      const agent = {
+        credit() {},
+        async decide(vec, mask) {
+          const t = Date.now();
+          const a = await inner.decide(vec, mask);
+          ms += Date.now() - t; n++;
+          seq.push(a);
+          return a;
+        },
+      };
+      await g.play(agent, 1);       // startTurn=1：不再重复消费占位洗牌记录
+      runs.push(seq.join(','));
+    }
+    const same = runs[0] === runs[1] && runs[0].length > 0;
+    lines.push('<b>② 当前模型</b>（合规贪心，只读当前可观测状态）');
+    lines.push(`　确定性：同一场景跑两遍 → ${same ? '✅ 决策序列完全一致' : '❌ 两次不同'}`
+      + `（${runs[0] ? runs[0].split(',').length : 0} 个决策）`);
+    lines.push(`　实时推理：${n} 次前向，平均 ${(ms / Math.max(1, n)).toFixed(1)} ms/步`);
+  }
+
   const w = APP.weights.meta;
+  const valDesc = w.value
+    ? w.value.layers.map((l) => `${l.in}→${l.out}`).join(' → ')
+    : '未加载（合规模式不需要）';
   box.innerHTML = `<h3>🔍 引擎与模型自检</h3>`
     + lines.map((l) => `<div>${l}</div>`).join('')
     + `<div style="margin-top:8px;color:#9fb3c8">量化：${w.quant.type}　｜　`
-    + `策略网 ${w.policy.layers.map(l => `${l.in}→${l.out}`).join(' → ')}　｜　`
-    + `价值网 ${w.value.layers.map(l => `${l.in}→${l.out}`).join(' → ')}</div>`;
+    + `策略网 ${w.policy.layers.map(l => `${l.in}→${l.out}`).join(' → ')}（hidden=${w.policy.hidden}）　｜　`
+    + `价值网 ${valDesc}　｜　模型来源 ${(w.source && w.source.policy) || '未知'}</div>`;
 }
 
 init().catch((e) => {
