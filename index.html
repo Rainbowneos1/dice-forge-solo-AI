@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>骰子英雄 · AI 实时演示（合规口径 151.2 分）</title>
+<title>Dice Heroes · Live AI Demo (v17, compliant, 158.4 points)</title>
 <style>
 /* ============================================================================
- * 骰子英雄 · 样式（视觉风格沿用原版 index.html，新增起始界面/AI 横幅/结算）
+ * Dice Heroes · Styles (look follows the original index.html; adds the start screen,
+ * the AI banner and the results screen)
  * ==========================================================================*/
 :root {
   --bg: #252540;
@@ -31,7 +32,7 @@ body {
 .hidden { display: none !important; }
 button { font-family: inherit; }
 
-/* ---------------- 起始界面 ---------------- */
+/* ---------------- Start screen ---------------- */
 .menu-screen { width: 100%; display: flex; justify-content: center; padding-top: 3vh; }
 .menu-card {
   max-width: 860px; width: 100%; background: var(--panel-bg);
@@ -74,7 +75,7 @@ button { font-family: inherit; }
 .explain-box li { margin-bottom: 5px; }
 .explain-box code { background: #0f1a2c; padding: 1px 6px; border-radius: 4px; color: var(--gold); }
 
-/* ---------------- 游戏界面 ---------------- */
+/* ---------------- Game screen ---------------- */
 .game-container {
   max-width: 1100px; width: 100%; display: flex; flex-direction: column; gap: 10px;
 }
@@ -166,7 +167,7 @@ button { font-family: inherit; }
 .speed-btn:hover { background: #36506f; }
 .speed-btn.active { background: var(--ai-cyan); color: #06202a; border-color: var(--ai-cyan); font-weight: bold; }
 .speed-tip { font-size: 0.8em; color: #7d93a8; }
-/* 弹窗隐藏/恢复按钮（与原版一致） */
+/* Modal hide / restore buttons (same as the original) */
 .modal-hide-btn {
   position: absolute; top: 8px; right: 12px; width: 34px; height: 34px;
   border-radius: 50%; background: #556; color: #fff; display: flex; align-items: center;
@@ -185,7 +186,7 @@ button { font-family: inherit; }
 .log-body .turn-line { color: var(--gold); font-weight: bold; margin-top: 6px; }
 .log-body .ai-line { color: var(--ai-cyan); }
 
-/* ---------------- AI 决策横幅 ---------------- */
+/* ---------------- AI decision banner ---------------- */
 .ai-banner {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 500;
   display: flex; justify-content: center; pointer-events: none;
@@ -208,7 +209,7 @@ button { font-family: inherit; }
 .ai-detail { margin-top: 6px; font-size: 0.86em; color: #a9c8d8; line-height: 1.6; }
 .ai-detail b { color: var(--gold); }
 
-/* ---------------- 弹窗 ---------------- */
+/* ---------------- Modals ---------------- */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex;
   align-items: center; justify-content: center; z-index: 600; padding: 12px;
@@ -250,7 +251,7 @@ button { font-family: inherit; }
 .hammer-coin { color: var(--gold); }
 .hammer-hammer { color: #c0a0d0; }
 
-/* ---------------- 结算界面 ---------------- */
+/* ---------------- Results screen ---------------- */
 .settle-screen { width: 100%; display: flex; justify-content: center; padding-top: 2vh; }
 .settle-card {
   max-width: 820px; width: 100%; background: var(--panel-bg); border: 1px solid var(--border);
@@ -292,52 +293,58 @@ button { font-family: inherit; }
 </head>
 <body>
 
-<!-- ==================== 起始界面：选择游玩方式 ==================== -->
+<!-- ==================== Start screen: pick a mode ==================== -->
 <div id="menuScreen" class="screen menu-screen">
   <div class="menu-card">
-    <h1>🎲 骰子英雄</h1>
-    <p class="subtitle">双骰策略游戏 · 强化学习 AI <b>v16</b>（软标签蒸馏，<b>合规口径 151.2 分</b>）</p>
+    <h1>🎲 Dice Heroes</h1>
+    <p class="subtitle">A two-dice strategy game · reinforcement-learning AI <b>v17</b> (left/right mirror augmentation + rule repair layer, <b>158.4 points</b> on the compliant benchmark)</p>
 
     <div class="menu-modes">
       <button class="mode-card" id="btnHuman">
         <div class="mode-icon">🧑</div>
-        <div class="mode-title">人类游玩</div>
-        <div class="mode-desc">完整 9 回合，自己决策（商店 / 英雄 / 支援 / 三选一 / 锤子转化）</div>
+        <div class="mode-title">Play as Human</div>
+        <div class="mode-desc">All 9 turns, every decision your own — shop, heroes, support, Choose One and coin-to-hammer conversions</div>
       </button>
       <button class="mode-card" id="btnAI">
         <div class="mode-icon">🤖</div>
-        <div class="mode-title">AI 演示</div>
-        <div class="mode-desc">全新随机局面现场决策，<b>浏览器内实时推理</b>，合规口径（不预知未来骰子）</div>
+        <div class="mode-title">Watch the AI</div>
+        <div class="mode-desc">Plays a brand-new random board live, <b>inferring inside your browser</b>, under the compliant rule (no peeking at future dice)<br>Policy argmax + rule repair layer R1-R4; every fix is spelled out in the log</div>
       </button>
     </div>
 
-    <div class="offline-note">📦 离线单文件版：模型与数据已内嵌，双击本文件即可运行（无需服务器）。</div>
+    <div class="offline-note">📦 Offline single-file build: the model and data are embedded — just open this file (no server needed).</div>
     <div class="menu-extra">
-      <button class="ghost-btn" id="btnExplain">📖 AI 与训练说明</button>
-      <button class="ghost-btn" id="btnCheck">🔍 引擎与模型自检</button>
+      <button class="ghost-btn" id="btnExplain">📖 How this AI was trained</button>
+      <button class="ghost-btn" id="btnCheck">🔍 Engine and model self-check</button>
     </div>
 
     <div id="explainBox" class="explain-box hidden">
-      <h3>这个 AI 是怎么来的</h3>
+      <h3>How this AI came to be</h3>
       <ul>
-        <li><b>网络</b>：策略网 260→1024×3→94（约 246 万参数）。<b>合规口径不用价值网</b>
-          （决策是纯策略网 argmax）</li>
-        <li><b>训练</b>：三代演进 —— ① 搜索自举 + 行为克隆（v9 起）；
-          ② 用<b>人类专家示范</b>加权续训（v11~v12）；
-          ③ 本版 v16：先从 v11 做 20 轮行为克隆（人类示范约 21%、逐批混合），
-          再用<b>上一版冠军的概率分布</b>做<b>软标签蒸馏</b>（λ=0.5），
-          把搜索教师"单次选择"的噪声平均掉</li>
-        <li><b>成绩（合规口径，= 贪心）</b>：<b>151.20</b> 分 —— 14 组独立种子、20,400 局
-          <b>逐局配对</b>，14 组全部为正；相对旧交付 146.78 为 <b>+4.48 分（t=+28.40）</b>。
-          对照：人类专家 165.9；启发式 104.0；随机 38.8</li>
-        <li><b>合规性</b>：每次决策 = argmax(策略网(当前 260 维可观测状态))，
-          <b>不做分支模拟、不读取本局未来的随机流</b>。三条独立证据：
-          同一对局重复两遍逐决策一致；把整条未来随机流换成另一条后动作不变；
-          代码级无搜索/随机源引用</li>
-        <li><b>推理</b>：模型权重 int8 量化（per-output-channel，误差 5.8×10⁻³），
-          网页加载时反量化为 float32 做全精度推理，单步前向约 <b>11~26 ms</b></li>
-        <li><b>可复现</b>：每局的牌堆与投掷序列由离线端预生成（随机数流按序消费），
-          因此本页每一局的走法都与离线评估逐位一致</li>
+        <li><b>Network</b>: a policy net 260 -> 1024 x3 -> 94 (about 2.46M parameters). The
+          <b>compliant path never uses the value net</b> (decisions = policy argmax plus four
+          deterministic rule fixes).</li>
+        <li><b>Training</b>: four generations — ① search bootstrapping plus behaviour cloning
+          (from v9); ② weighted fine-tuning on <b>human expert demonstrations</b> (v11-v12);
+          ③ soft-label distillation (v16); ④ <b>this v17</b>: every game is additionally trained
+          <b>flipped left-to-right</b> (same data budget, twice the effective samples), then
+          advantage-weighted regression (AWR) on the <b>return signal</b>.</li>
+        <li><b>Result (compliant benchmark)</b>: <b>158.41</b> points — 5 fresh seed groups,
+          7,500 games evaluated <b>pairwise</b>, all five groups positive; <b>+7.29 points
+          (t = +37.63)</b> versus v16. For reference: human expert 165.9, heuristic 104.0,
+          random 38.8.</li>
+        <li><b>Compliance</b>: every decision is argmax(policy net(260-d observable state))
+          followed by four rule fixes that read only that state — <b>no branch simulation and
+          no access to the rest of the game's draw stream</b>. Three independent proofs: the
+          same game replayed twice gives identical decisions; replacing the entire future
+          draw stream leaves every action unchanged; and the code contains no search or
+          randomness source.</li>
+        <li><b>Inference</b>: weights are int8-quantized (per-output-channel, max absolute
+          error 6.3x10⁻³) and dequantized to float32 when the page loads, so inference runs at
+          full precision; one forward pass takes about <b>11-26 ms</b>.</li>
+        <li><b>Reproducibility</b>: each game's deck and roll sequence are pre-generated
+          offline and consumed in order, so every game here plays out bit-for-bit the same way
+          as the offline evaluation.</li>
       </ul>
     </div>
 
@@ -345,159 +352,160 @@ button { font-family: inherit; }
   </div>
 </div>
 
-<!-- ==================== 游戏界面 ==================== -->
+<!-- ==================== Game screen ==================== -->
 <div id="gameScreen" class="screen hidden">
   <div class="game-container">
     <div class="top-bar">
-      <span class="turn-info" id="turnInfo">📅 第 1/9 回合</span>
-      <span class="phase-badge" id="phaseBadge">🎲 掷骰</span>
-      <span class="score-display" id="scoreDisplay">⭐ 分数：0</span>
-      <button class="quit-btn" id="btnQuit">↩ 返回菜单</button>
+      <span class="turn-info" id="turnInfo">📅 Turn 1/9</span>
+      <span class="phase-badge" id="phaseBadge">🎲 Roll</span>
+      <span class="score-display" id="scoreDisplay">⭐ Score: 0</span>
+      <button class="quit-btn" id="btnQuit">↩ Back to menu</button>
     </div>
 
     <div class="resources-panel" id="resourcesPanel"></div>
 
     <div class="dice-area">
       <div class="dice-column">
-        <h3>🎲 左骰子</h3>
+        <h3>🎲 Left die</h3>
         <div class="dice-faces" id="leftDiceFaces"></div>
       </div>
       <div class="dice-column">
-        <h3>🎲 右骰子</h3>
+        <h3>🎲 Right die</h3>
         <div class="dice-faces" id="rightDiceFaces"></div>
       </div>
     </div>
 
-    <div class="support-bar" id="supportBar">🛡️ 可用支援能力：<b>无</b></div>
+    <div class="support-bar" id="supportBar">🛡️ Support available: <b>none</b></div>
 
-    <div class="select-hint hidden" id="selectHint">👆 请在左右骰子上点击一个骰面</div>
+    <div class="select-hint hidden" id="selectHint">👆 Click a face on either die</div>
 
     <div class="speed-bar">
-      <span class="speed-label">演示速度</span>
-      <button class="speed-btn" id="spdSlow">🐢 慢</button>
-      <button class="speed-btn active" id="spdNormal">▶ 标准</button>
-      <button class="speed-btn" id="spdFast">🐇 快</button>
-      <span class="speed-tip">对人类游玩与 AI 演示都生效（人类掷骰 0.7 秒 / AI 决策横幅 3 秒 × 倍率）</span>
+      <span class="speed-label">Demo speed</span>
+      <button class="speed-btn" id="spdSlow">🐢 Slow</button>
+      <button class="speed-btn active" id="spdNormal">▶ Standard</button>
+      <button class="speed-btn" id="spdFast">🐇 Fast</button>
+      <span class="speed-tip">Applies to both modes (human rolls 0.7 s / AI decision banner 3 s, scaled)</span>
     </div>
 
     <div class="log-panel">
-      <div class="log-title">📜 对局记录</div>
+      <div class="log-title">📜 Game log</div>
       <div class="log-body" id="logBody"></div>
     </div>
   </div>
 </div>
 
-<!-- ==================== AI 决策横幅 ==================== -->
+<!-- ==================== AI decision banner ==================== -->
 <div id="aiBanner" class="ai-banner hidden">
   <div class="ai-banner-inner">
     <div class="ai-banner-head">
-      <span class="ai-badge">🤖 AI 决策</span>
-      <span class="ai-type" id="aiType">主要行动</span>
+      <span class="ai-badge">🤖 AI decision</span>
+      <span class="ai-type" id="aiType">Main Action</span>
     </div>
     <div class="ai-action" id="aiAction">—</div>
     <div class="ai-detail" id="aiDetail"></div>
   </div>
 </div>
 
-<!-- ==================== 结算界面 ==================== -->
+<!-- ==================== Results screen ==================== -->
 <div id="settleScreen" class="screen settle-screen hidden">
   <div class="settle-card">
-    <h1 id="settleTitle">🏁 终局结算</h1>
-    <div class="settle-score"><span id="settleTotal">0</span><small> 分</small></div>
+    <h1 id="settleTitle">🏁 Final Results</h1>
+    <div class="settle-score"><span id="settleTotal">0</span><small> points</small></div>
     <div class="settle-formula" id="settleFormula"></div>
     <div class="settle-grid" id="settleGrid"></div>
     <div class="settle-heroes" id="settleHeroes"></div>
     <div class="settle-compare" id="settleCompare"></div>
-    <button class="primary-btn" id="btnBackMenu">↩ 回到初始界面</button>
+    <button class="primary-btn" id="btnBackMenu">↩ Back to the start screen</button>
   </div>
 </div>
 
-<!-- ==================== 通用弹窗容器 ==================== -->
+<!-- ==================== Shared modal container ==================== -->
 <div id="modalContainer"></div>
 <div id="toastContainer"></div>
 
 <script src="bundle.js"></script>
 <script>
 /* ============================================================================
- * 骰子英雄 · 游戏引擎（game.js）
+ * Dice Heroes · Game Engine (game.js)
  * ---------------------------------------------------------------------------
- * 本文件是 Python 版 game.py 的逐行 JavaScript 移植，用于在浏览器里完整复现
- * 同一局游戏：相同的牌堆、相同的投掷、相同的决策点顺序与状态编码（260 维）。
+ * A line-by-line JavaScript port of the Python reference engine (game.py) that
+ * reproduces the very same game in the browser: identical deck, identical rolls,
+ * identical sequence of decision points and the same 260-dimensional state vector.
  *
- * 关键约定（与 Python 版一致）：
- *   - 随机性来自「预生成的随机数流」（DrawStream）：
- *       Python 端把该局用到的 random()/integers()/shuffle() 调用按序录制，
- *       网页端按同一顺序消费，因此不需要在 JS 里实现 numpy 的 PCG64。
- *   - 快照/恢复（浅层搜索用）会同时保存「随机数流位置」。
- *   - 决策接口是 async：agent.decide(vec, mask, game) 返回 Promise<全局动作编号 0..93>。
- *     人类智能体会 await 玩家点击；AI 智能体立即 resolve。
+ * Key conventions (identical to the Python version):
+ *   - Randomness comes from a pre-recorded draw stream (DrawStream): the Python side
+ *     logs every random()/integers()/shuffle() call in order and this page consumes
+ *     them in the same order, so numpy's PCG64 is never reimplemented here.
+ *   - Snapshots / restores (used by the shallow search) also save the stream position.
+ *   - The decision interface is async: agent.decide(vec, mask, game) resolves to a
+ *     global action id in 0..93. Human agents await a click; AI agents resolve at once.
  * ==========================================================================*/
 
-/* ------------------------------ 常量表 ------------------------------ */
+/* ------------------------------ Constant tables ------------------------------ */
 
 const FACES = {
-  '1红':               { type: 'simple', effect: [1, 0, 0, 0] },
-  '1蓝':               { type: 'simple', effect: [0, 1, 0, 0] },
-  '2分':               { type: 'simple', effect: [0, 0, 0, 2] },
-  '1金币':             { type: 'simple', effect: [0, 0, 1, 0] },
-  '3金币':             { type: 'simple', effect: [0, 0, 3, 0] },
-  '1蓝色资源':         { type: 'simple', effect: [0, 1, 0, 0] },
-  '4金币':             { type: 'simple', effect: [0, 0, 4, 0] },
-  '1红色资源':         { type: 'simple', effect: [1, 0, 0, 0] },
-  '2分数+2金币':       { type: 'simple', effect: [0, 0, 2, 2] },
-  '2蓝色资源':         { type: 'simple', effect: [0, 2, 0, 0] },
-  '2红色资源':         { type: 'simple', effect: [2, 0, 0, 0] },
-  '4分':               { type: 'simple', effect: [0, 0, 0, 4] },
-  '6金币':             { type: 'simple', effect: [0, 0, 6, 0] },
-  '1红色资源+1分':     { type: 'simple', effect: [1, 0, 0, 1] },
-  '1蓝色资源+2金币':   { type: 'simple', effect: [0, 1, 2, 0] },
-  '三选一(1)':         { type: 'choice', options: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] },
-  '1红+1蓝+1分+1金币': { type: 'simple', effect: [1, 1, 1, 1] },
-  '2蓝+2分':           { type: 'simple', effect: [0, 2, 0, 2] },
-  '6分':               { type: 'simple', effect: [0, 0, 0, 6] },
-  '三选一(2)':         { type: 'choice', options: [[2, 0, 0], [0, 2, 0], [0, 0, 2]] },
-  '三倍':              { type: 'triple' },
+  '1 Red':               { type: 'simple', effect: [1, 0, 0, 0] },
+  '1 Blue':               { type: 'simple', effect: [0, 1, 0, 0] },
+  '2 Points':               { type: 'simple', effect: [0, 0, 0, 2] },
+  '1 Coin':             { type: 'simple', effect: [0, 0, 1, 0] },
+  '3 Coins':             { type: 'simple', effect: [0, 0, 3, 0] },
+  '1 Blue Resource':         { type: 'simple', effect: [0, 1, 0, 0] },
+  '4 Coins':             { type: 'simple', effect: [0, 0, 4, 0] },
+  '1 Red Resource':         { type: 'simple', effect: [1, 0, 0, 0] },
+  '2 Points + 2 Coins':       { type: 'simple', effect: [0, 0, 2, 2] },
+  '2 Blue Resources':         { type: 'simple', effect: [0, 2, 0, 0] },
+  '2 Red Resources':         { type: 'simple', effect: [2, 0, 0, 0] },
+  '4 Points':               { type: 'simple', effect: [0, 0, 0, 4] },
+  '6 Coins':             { type: 'simple', effect: [0, 0, 6, 0] },
+  '1 Red Resource + 1 Point':     { type: 'simple', effect: [1, 0, 0, 1] },
+  '1 Blue Resource + 2 Coins':   { type: 'simple', effect: [0, 1, 2, 0] },
+  'Choose One (1)':         { type: 'choice', options: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] },
+  '1 Red + 1 Blue + 1 Point + 1 Coin': { type: 'simple', effect: [1, 1, 1, 1] },
+  '2 Blue + 2 Points':           { type: 'simple', effect: [0, 2, 0, 2] },
+  '6 Points':               { type: 'simple', effect: [0, 0, 0, 6] },
+  'Choose One (2)':         { type: 'choice', options: [[2, 0, 0], [0, 2, 0], [0, 0, 2]] },
+  'Triple':              { type: 'triple' },
 };
 
 const SHOP_ITEMS = [
-  { face: '3金币', price: 2, limited: false },
-  { face: '1蓝色资源', price: 2, limited: false },
-  { face: '4金币', price: 3, limited: false },
-  { face: '1红色资源', price: 3, limited: false },
-  { face: '2分数+2金币', price: 5, limited: false },
-  { face: '2蓝色资源', price: 6, limited: false },
-  { face: '2红色资源', price: 8, limited: false },
-  { face: '4分', price: 8, limited: false },
-  { face: '6金币', price: 4, limited: true },
-  { face: '1红色资源+1分', price: 4, limited: true },
-  { face: '1蓝色资源+2金币', price: 4, limited: true },
-  { face: '三选一(1)', price: 4, limited: true },
-  { face: '1红+1蓝+1分+1金币', price: 12, limited: true },
-  { face: '2蓝+2分', price: 12, limited: true },
-  { face: '6分', price: 12, limited: true },
-  { face: '三选一(2)', price: 12, limited: true },
+  { face: '3 Coins', price: 2, limited: false },
+  { face: '1 Blue Resource', price: 2, limited: false },
+  { face: '4 Coins', price: 3, limited: false },
+  { face: '1 Red Resource', price: 3, limited: false },
+  { face: '2 Points + 2 Coins', price: 5, limited: false },
+  { face: '2 Blue Resources', price: 6, limited: false },
+  { face: '2 Red Resources', price: 8, limited: false },
+  { face: '4 Points', price: 8, limited: false },
+  { face: '6 Coins', price: 4, limited: true },
+  { face: '1 Red Resource + 1 Point', price: 4, limited: true },
+  { face: '1 Blue Resource + 2 Coins', price: 4, limited: true },
+  { face: 'Choose One (1)', price: 4, limited: true },
+  { face: '1 Red + 1 Blue + 1 Point + 1 Coin', price: 12, limited: true },
+  { face: '2 Blue + 2 Points', price: 12, limited: true },
+  { face: '6 Points', price: 12, limited: true },
+  { face: 'Choose One (2)', price: 12, limited: true },
 ];
 
 const HEROES = [
-  { name: '长老', cost: { red: 1 }, score: 0, effect: 'support', id: 'elder' },
-  { name: '野灵', cost: { red: 1 }, score: 2, effect: 'immediate', id: 'wild_spirit' },
-  { name: '猫头鹰', cost: { red: 2 }, score: 4, effect: 'support', id: 'owl' },
-  { name: '米诺陶', cost: { red: 3 }, score: 11, effect: 'none', id: 'minotaur' },
-  { name: '戈尔贡', cost: { red: 4 }, score: 14, effect: 'none', id: 'gorgon' },
-  { name: '深渊之镜', cost: { red: 5 }, score: 16, effect: 'none', id: 'abyss' },
-  { name: '斯芬克斯', cost: { red: 6 }, score: 10, effect: 'immediate', id: 'sphinx' },
-  { name: '九头蛇', cost: { red: 5, blue: 5 }, score: 26, effect: 'none', id: 'hydra' },
-  { name: '巨蟹', cost: { blue: 6 }, score: 8, effect: 'immediate', id: 'crab' },
-  { name: '隐形头盔', cost: { blue: 5 }, score: 4, effect: 'immediate', id: 'helm' },
-  { name: '船夫', cost: { blue: 4 }, score: 12, effect: 'none', id: 'ferryman' },
-  { name: '萨提尔', cost: { blue: 3 }, score: 10, effect: 'none', id: 'satyr' },
-  { name: '银鹿', cost: { blue: 2 }, score: 2, effect: 'support', id: 'deer' },
-  { name: '宝箱', cost: { blue: 1 }, score: 2, effect: 'immediate', id: 'chest' },
-  { name: '锤子', cost: { blue: 1 }, score: 0, effect: 'immediate', id: 'hammer' },
+  { name: 'The Elder', cost: { red: 1 }, score: 0, effect: 'support', id: 'elder' },
+  { name: 'Wild Spirits', cost: { red: 1 }, score: 2, effect: 'immediate', id: 'wild_spirit' },
+  { name: "The Guardian's Owl", cost: { red: 2 }, score: 4, effect: 'support', id: 'owl' },
+  { name: 'Minotaur', cost: { red: 3 }, score: 11, effect: 'none', id: 'minotaur' },
+  { name: 'Gorgon', cost: { red: 4 }, score: 14, effect: 'none', id: 'gorgon' },
+  { name: 'Mirror of the Abyss', cost: { red: 5 }, score: 16, effect: 'none', id: 'abyss' },
+  { name: 'Sphinx', cost: { red: 6 }, score: 10, effect: 'immediate', id: 'sphinx' },
+  { name: 'Hydra', cost: { red: 5, blue: 5 }, score: 26, effect: 'none', id: 'hydra' },
+  { name: 'Cancer', cost: { blue: 6 }, score: 8, effect: 'immediate', id: 'crab' },
+  { name: 'Helmet of Invisibility', cost: { blue: 5 }, score: 4, effect: 'immediate', id: 'helm' },
+  { name: 'Ferryman', cost: { blue: 4 }, score: 12, effect: 'none', id: 'ferryman' },
+  { name: 'Satyrs', cost: { blue: 3 }, score: 10, effect: 'none', id: 'satyr' },
+  { name: 'The Silver Hind', cost: { blue: 2 }, score: 2, effect: 'support', id: 'deer' },
+  { name: "The Blacksmith's Chest", cost: { blue: 1 }, score: 2, effect: 'immediate', id: 'chest' },
+  { name: "The Blacksmith's Hammer", cost: { blue: 1 }, score: 0, effect: 'immediate', id: 'hammer' },
 ];
 const HERO_SCORE = {};
 HEROES.forEach(h => { HERO_SCORE[h.name] = h.score; });
-const SUPPORT_HEROES = ['长老', '银鹿', '猫头鹰'];
+const SUPPORT_HEROES = ['The Elder', 'The Silver Hind', "The Guardian's Owl"];
 
 const DECISION_TYPES = ['choice', 'hammer', 'support', 'die', 'owl',
                         'main', 'shop_item', 'shop_place', 'hero', 'extra', 'helm'];
@@ -509,56 +517,57 @@ const SEG_OFFSET = {};
 {
   let off = 0;
   for (const [name, size] of TYPE_SEGMENTS) { SEG_OFFSET[name] = [off, size]; off += size; }
-  if (off !== N_ACTIONS) throw new Error('动作空间分段错误');
+  if (off !== N_ACTIONS) throw new Error('action-space segmentation is wrong');
 }
 const STATE_DIM = 260;
 const PHASE_IDX = { roll: 2, support: 3, main: 4, extra: 5 };
 
-/* 决策类型的中文名（横幅显示用） */
+/* Human-readable name of each decision type (shown in the banner) */
 const TYPE_LABEL = {
-  choice: '三选一', hammer: '金币→锤子', support: '支援阶段', die: '选择骰子',
-  owl: '猫头鹰', main: '主要行动', shop_item: '商店选购', shop_place: '骰面安放',
-  hero: '购买英雄', extra: '额外行动', helm: '隐形头盔',
+  choice: 'Choose One', hammer: 'Coins → Hammer', support: 'Support Phase', die: 'Choose Die',
+  owl: "The Guardian's Owl", main: 'Main Action', shop_item: 'Shop', shop_place: 'Place Face',
+  hero: 'Buy Hero', extra: 'Extra Action', helm: 'Helmet of Invisibility',
 };
 
-/* ------------------------------ 随机数流 ------------------------------ */
+/* ------------------------------ Draw stream ------------------------------ */
 
 class DrawStream {
-  /** 顺序消费 Python 端录制的调用记录。
-   *  记录格式：['d', value] / ['i', high, value] / ['s', n, ...arr] */
+  /** Consume the calls recorded on the Python side, in order.
+   *  Record format: ['d', value] / ['i', high, value] / ['s', n, ...arr] */
   constructor(calls) {
     this.calls = calls || [];
     this.pos = 0;
   }
   random() {
     const c = this.calls[this.pos++];
-    if (!c || c[0] !== 'd') throw new Error(`随机数流类型不符（期望 d，实际 ${c && c[0]}）`);
+    if (!c || c[0] !== 'd') throw new Error(`draw-stream entry mismatch (expected d, got ${c && c[0]})`);
     return c[1];
   }
   integers(high) {
     const c = this.calls[this.pos++];
     if (!c) {
-      /* 场景随机流耗尽（理论上不会发生：每场景预留 600 次投掷）：
-         用位置派生的确定性回退，保证不崩且可复现 */
+      /* The scenario stream ran dry (should never happen: every scenario reserves
+         600 throws). Fall back to a value derived from the position so the game
+         neither crashes nor loses reproducibility. */
       return (this.pos * 2654435761) % high;
     }
     if (c[0] !== 'i' || c[1] !== high) {
-      throw new Error(`随机数流类型不符（期望 i(${high})，实际 ${JSON.stringify(c)}）`);
+      throw new Error(`draw-stream entry mismatch (expected i(${high}), got ${JSON.stringify(c)})`);
     }
     return c[2];
   }
   shuffle(arr) {
     const c = this.calls[this.pos++];
     if (!c || c[0] !== 's' || c[1] !== arr.length) {
-      throw new Error(`随机数流类型不符（期望 s(${arr.length})，实际 ${JSON.stringify(c)}）`);
+      throw new Error(`draw-stream entry mismatch (expected s(${arr.length}), got ${JSON.stringify(c)})`);
     }
-    const perm = c[2];              // 记录的是洗牌后的数组内容
+    const perm = c[2];              // the record stores the deck *after* shuffling
     for (let i = 0; i < arr.length; i++) arr[i] = perm[i];
     return arr;
   }
   snapshot() { return this.pos; }
   restore(p) { this.pos = p; }
-  /** 派生一个独立流（分支模拟用）：位置相同但互不影响 */
+  /** Fork an independent stream (for branch simulation): same position, no shared state */
   fork() {
     const s = new DrawStream(this.calls);
     s.pos = this.pos;
@@ -566,13 +575,14 @@ class DrawStream {
   }
 }
 
-/* ------------------------------ 对局 ------------------------------ */
+/* ------------------------------ A single game ------------------------------ */
 
 class Game {
   constructor(draws, options = {}) {
-    /** draws: 随机数流记录，或 DrawStream 实例
-     *  options.left/right: 固定牌堆（人类场景用，不消费洗牌记录）
-     *  options.skipReset: 不在此处 reset（由随后的 play() 统一处理，避免重复消费随机流） */
+    /** draws: either a draw-stream record or a DrawStream instance
+     *  options.left/right: a fixed deck (used by the human scenarios; no shuffle is consumed)
+     *  options.skipReset: skip reset() here — the following play() does it once, so the
+     *                     stream is not consumed twice */
     this.stream = (draws instanceof DrawStream) ? draws : new DrawStream(draws);
     this.fixedBoard = (options.left && options.right)
       ? { left: options.left.slice(), right: options.right.slice() } : null;
@@ -581,7 +591,7 @@ class Game {
     this.onEvent = options.onEvent || null;
     this.recordTurnDecisions = true;
     if (options.skipReset) {
-      /* 只初始化字段、不消费随机流；由随后的 play() 负责第一次 reset */
+      /* Only initialise fields; the first reset() is done by the following play() */
       this.left = []; this.right = [];
       this.red = 0; this.blue = 0; this.coin = 0; this.score = 0;
       this.redCap = 6; this.blueCap = 6; this.coinCap = 12;
@@ -599,9 +609,9 @@ class Game {
   }
 
   reset() {
-    /* 无论是否固定牌堆，都消费一条洗牌记录，保证随机数流的消费顺序一致 */
-    const pool = ['1红', '1蓝', '2分'];
-    for (let i = 0; i < 9; i++) pool.push('1金币');
+    /* Consume one shuffle record even with a fixed deck, so the stream order stays identical */
+    const pool = ['1 Red', '1 Blue', '2 Points'];
+    for (let i = 0; i < 9; i++) pool.push('1 Coin');
     this.stream.shuffle(pool);
     if (this.fixedBoard) {
       this.left = this.fixedBoard.left.slice();
@@ -631,7 +641,7 @@ class Game {
     this.agent = null;
   }
 
-  /* ---------------- 事件与奖励 ---------------- */
+  /* ---------------- Events and rewards ---------------- */
   ev(text) {
     if (this.logEnabled) this.events.push([this.turn, this.phase, text]);
     if (this.onEvent) this.onEvent(text, this);
@@ -645,31 +655,32 @@ class Game {
     }
   }
 
-  /* ---------------- 决策接口（async） ---------------- */
+  /* ---------------- Decision interface (async) ---------------- */
   async decide(dtype, ctx, legal, opts = null) {
-    if (this.nDecisions > 5000) throw new Error('决策次数超限，疑似死循环');
+    if (this.nDecisions > 5000) throw new Error('too many decisions — probable infinite loop');
     this.dtype = dtype;
     this.ctx = ctx;
     const vec = this.encodeState(dtype, ctx);
     const mask = this.buildMask(dtype, legal);
-    this.drainReward();                    // 把上一决策期间累积的奖励记到上一动作
+    this.drainReward();                    // credit rewards accumulated since the previous action
     const a = await this.agent.decide(vec, mask, this);
     const [off, size] = SEG_OFFSET[dtype];
-    /* opts.allowCancel：人类界面的「取消」返回值。注意智能体会返回 off+local，
-       取消时 local 为负，因此这里按 off + 取消值 来识别，并把取消值原样返回。 */
+    /* opts.allowCancel: the "cancel" value used by the human UI. Agents return off+local,
+       and for a cancel that local is negative — so detect it as off + cancelValue and
+       return the cancel value unchanged. */
     if (opts && opts.allowCancel && a === off + opts.allowCancel.value) {
       this.nDecisions++;
       if (this.recordTurnDecisions) this.turnDecisions.push([dtype, opts.allowCancel.value]);
       return opts.allowCancel.value;
     }
     if (!(a >= off && a < off + size && mask[a] === 1)) {
-      throw new Error(`非法动作: dtype=${dtype} a=${a} legal=${legal}`);
+      throw new Error(`illegal action: dtype=${dtype} a=${a} legal=${legal}`);
     }
     this.nDecisions++;
     if (this.recordTurnDecisions) this.turnDecisions.push([dtype, a - off]);
     return a - off;
   }
-  /* ---------------- 状态编码（260 维） ---------------- */
+  /* ---------------- State encoding (260 dims) ---------------- */
   encodeState(dtype, ctx) {
     const v = new Float32Array(STATE_DIM);
     v[0] = this.turn / 9;
@@ -710,11 +721,12 @@ class Game {
     for (let i = 0; i < HEROES.length; i++) {
       v[206 + i] = Math.min(counts[HEROES[i].name] || 0, 4) / 4;
     }
-    const left = { '长老': 0, '银鹿': 0, '猫头鹰': 0 };
+    const left = {};
+  for (const h of SUPPORT_HEROES) left[h] = 0;
     for (const n of this.supportPool) if (n in left) left[n]++;
-    v[221] = Math.min(left['长老'], 4) / 4;
-    v[222] = Math.min(left['银鹿'], 4) / 4;
-    v[223] = Math.min(left['猫头鹰'], 4) / 4;
+    v[221] = Math.min(left[SUPPORT_HEROES[0]], 4) / 4;
+    v[222] = Math.min(left[SUPPORT_HEROES[1]], 4) / 4;
+    v[223] = Math.min(left[SUPPORT_HEROES[2]], 4) / 4;
     for (let i = 0; i < 8; i++) {
       if (this.limitedBought.has(SHOP_ITEMS[8 + i].face)) v[224 + i] = 1;
     }
@@ -743,7 +755,7 @@ class Game {
     return m;
   }
 
-  /* ---------------- 资源与锤子 ---------------- */
+  /* ---------------- Resources and the hammer track ---------------- */
   async gainResources(res, source = '') {
     const gained = { red: 0, blue: 0, coin: 0, score: 0, hammer: 0 };
     const red = res.red || 0, blue = res.blue || 0, score = res.score || 0, cv = res.coin || 0;
@@ -770,7 +782,7 @@ class Game {
           const legal = [];
           for (let i = 0; i <= maxConv; i++) legal.push(i);
           conv = await this.decide('hammer', { coins_gained: cv, max_conv: maxConv }, legal);
-          this.ev(`⛏️ 金币→锤子：转换 ${conv} 枚（其余 ${cv - conv} 枚进金币）`);
+          this.ev(`⛏️ Coins → hammer: converted ${conv} coin(s), ${cv - conv} went to the coin pool`);
         }
       }
       conv = Math.min(conv, cv, Math.max(0, this.hammerCap - this.hammerTrack));
@@ -788,7 +800,7 @@ class Game {
     if (gained.coin) parts.push(`💰+${gained.coin}`);
     if (gained.score) parts.push(`⭐+${gained.score}`);
     if (gained.hammer) parts.push(`🔨+${gained.hammer}`);
-    if (parts.length) this.ev('获得: ' + parts.join(' ') + (source ? `（${source}）` : ''));
+    if (parts.length) this.ev('Gained: ' + parts.join(' ') + (source ? ` (${source})` : ''));
     return gained;
   }
 
@@ -804,7 +816,7 @@ class Game {
         const pts = (k % 2 === 1) ? 10 : 15;
         this.score += pts;
         this.rewardBuffer += pts;
-        this.ev(`🔨 锤子达到 ${th}，获得 ${pts} 分！`);
+        this.ev(`🔨 Hammer track reached ${th} — ${pts} point(s)!`);
       }
     }
   }
@@ -828,7 +840,7 @@ class Game {
     return false;
   }
 
-  /* ---------------- 投掷与结算 ---------------- */
+  /* ---------------- Rolls and resolution ---------------- */
   async resolveFace(face, mult = 1, source = '') {
     const f = FACES[face];
     if (f.type === 'triple') return;
@@ -837,9 +849,9 @@ class Game {
       const opts = f.options.map(o => o.map(x => mult * x));
       const idx = await this.decide('choice', { options: opts, mult }, [0, 1, 2]);
       const opt = opts[idx];
-      const labels = ['🔴红', '🔵蓝', '💰金币'];
+      const labels = ['🔴 Red', '🔵 Blue', '💰 Coin'];
       const chosen = opt.map((v, i) => v ? `${v}${labels[i]}` : null).filter(Boolean).join(' + ');
-      this.ev(`${source}三选一(${face})${mult > 1 ? '×' + mult : ''}：选择 ${chosen}`);
+      this.ev(`${source}Choose One (${face})${mult > 1 ? ' ×' + mult : ''}: picked ${chosen}`);
       res = { red: opt[0], blue: opt[1], coin: opt[2] };
     } else {
       const [r, b, c, s] = f.effect;
@@ -854,10 +866,10 @@ class Game {
     if (FACES[lf].type === 'triple') tri.push(0);
     if (FACES[rf].type === 'triple') tri.push(1);
     if (tri.length === 2) {
-      this.ev('两个三倍，无收获');
+      this.ev('Both dice rolled Triple — nothing gained');
     } else if (tri.length === 1) {
       const other = faces[1 - tri[0]];
-      this.ev(`⚡ 三倍触发！${other} ×3`);
+      this.ev(`⚡ Triple! ${other} ×3`);
       await this.resolveFace(other, 3, source);
     } else {
       const lc = this.isFaceChoice(lf), rc = this.isFaceChoice(rf);
@@ -874,22 +886,23 @@ class Game {
   async rollBoth(n, source = '') {
     const lf = this.left[this.stream.integers(6)];
     const rf = this.right[this.stream.integers(6)];
-    this.ev(`🎲 第${n}次投掷：左[${lf}] 右[${rf}]`);
+    this.ev(`🎲 Roll ${n}: left [${lf}] right [${rf}]`);
     await this.resolveTwoFaces(lf, rf, source);
   }
 
-  /* ---------------- 支援阶段 ---------------- */
+  /* ---------------- Support phase ---------------- */
   async supportPhase() {
     this.supportPool = this.heroesBought.filter(h => SUPPORT_HEROES.includes(h));
-    this.ev('🛡️ 支援阶段开始');    while (this.supportPool.length) {
+    this.ev('🛡️ Support phase begins');
+    while (this.supportPool.length) {
       const legal = [];
       for (let i = 0; i < SUPPORT_HEROES.length; i++) {
         const n = SUPPORT_HEROES[i];
-        if (this.supportPool.includes(n) && !(n === '长老' && this.coin < 3)) legal.push(i);
+        if (this.supportPool.includes(n) && !(n === 'The Elder' && this.coin < 3)) legal.push(i);
       }
       legal.push(3);
       const idx = await this.decide('support', {}, legal);
-      if (idx === 3) { this.ev('⏭️ 结束支援阶段'); break; }
+      if (idx === 3) { this.ev('⏭️ Support phase ended'); break; }
       const ability = SUPPORT_HEROES[idx];
       this.supportPool.splice(this.supportPool.indexOf(ability), 1);
       const ok = await this.executeSupport(ability);
@@ -899,27 +912,27 @@ class Game {
   }
 
   async executeSupport(ability) {
-    if (ability === '长老') {
-      if (this.coin < 3) { this.ev('金币不足3，无法发动长老'); return false; }
+    if (ability === 'The Elder') {
+      if (this.coin < 3) { this.ev("Not enough coins (needs 3) — The Elder cannot act"); return false; }
       this.coin -= 3; this.score += 4; this.rewardBuffer += 4;
-      this.ev('🧙 长老：支付 3 金币，获得 4 分');
-    } else if (ability === '银鹿') {
+      this.ev('🧙 The Elder: paid 3 coins for 4 points');
+    } else if (ability === 'The Silver Hind') {
       const idx = await this.decide('die', {}, [0, 1]);
       const die = idx === 0 ? this.left : this.right;
       const face = die[this.stream.integers(6)];
-      this.ev(`🦌 银鹿：单独投掷${idx === 0 ? '左' : '右'}骰 → [${face}]`);
-      await this.resolveFace(face, 1, '银鹿');
-    } else if (ability === '猫头鹰') {
+      this.ev(`🦌 The Silver Hind: threw the ${idx === 0 ? 'left' : 'right'} die → [${face}]`);
+      await this.resolveFace(face, 1, 'The Silver Hind');
+    } else if (ability === "The Guardian's Owl") {
       const idx = await this.decide('owl', {}, [0, 1, 2]);
       const res = [{ red: 1 }, { blue: 1 }, { coin: 1 }][idx];
-      const label = ['🔴 1红', '🔵 1蓝', '💰 1金币'][idx];
-      this.ev(`🦉 猫头鹰：选择 ${label}`);
-      await this.gainResources(res, '猫头鹰');
+      const label = ['🔴 1 Red', '🔵 1 Blue', '💰 1 Coin'][idx];
+      this.ev(`🦉 The Guardian's Owl: chose ${label}`);
+      await this.gainResources(res, "The Guardian's Owl");
     }
     return true;
   }
 
-  /* ---------------- 行动阶段 ---------------- */
+  /* ---------------- Action phase ---------------- */
   async actionMenu(extra) {
     const failed = new Set();
     while (true) {
@@ -937,7 +950,7 @@ class Game {
         if (await this.buyHero()) return true;
         if (!this.humanMode) failed.add(1);
       } else {
-        this.ev('⏭️ 跳过' + (extra ? '（返还2红色资源）' : ''));
+        this.ev('⏭️ Skip' + (extra ? ' (refunded 2 red)' : ''));
         return false;
       }
     }
@@ -946,7 +959,7 @@ class Game {
   async enterShop() {
     this.visitBought = new Set();
     let boughtAnything = false;
-    this.ev('🏪 进入骰面商店');
+    this.ev('🏪 Entered the face shop');
     while (true) {
       const available = [];
       for (let i = 0; i < SHOP_ITEMS.length; i++) {
@@ -957,32 +970,33 @@ class Game {
         available.push(i);
       }
       if (!available.length) {
-        this.ev(boughtAnything ? '无法继续购买，商店关闭' : '金币不足以购买任何可购骰面');
+        this.ev(boughtAnything ? 'Nothing else can be bought — shop closed'
+          : 'Not enough coins to buy any available face');
         break;
       }
       const legal = available.concat([16]);
       const idx = await this.decide('shop_item', {}, legal);
-      if (idx === 16) { this.ev('结束购买'); break; }
+      if (idx === 16) { this.ev('Leave the shop'); break; }
       const item = SHOP_ITEMS[idx];
-      if (this.coin < item.price) { this.ev('金币不足！'); continue; }
+      if (this.coin < item.price) { this.ev('Not enough coins!'); continue; }
       const legalPlace = [];
       for (let i = 0; i < 12; i++) legalPlace.push(i);
       const pos = await this.decide('shop_place', { item_face: item.face }, legalPlace,
                                     { allowCancel: { value: -1 } });
-      if (!(pos >= 0 && pos <= 11)) {      // 取消/异常值：不扣金币、留在商店
-        this.ev(`↩ 取消购买 ${item.face}（未花费金币，可重新选择）`);
+      if (!(pos >= 0 && pos <= 11)) {      // cancelled / out of range: no charge, stay in the shop
+        this.ev(`↩ Cancelled buying ${item.face} (nothing was spent — pick again)`);
         continue;
       }
       this.coin -= item.price;
       const face = item.face;
       let side, slot;
-      if (pos < 6) { this.left[pos] = face; side = '左'; slot = pos + 1; }
-      else { this.right[pos - 6] = face; side = '右'; slot = pos - 6 + 1; }
+      if (pos < 6) { this.left[pos] = face; side = 'left'; slot = pos + 1; }
+      else { this.right[pos - 6] = face; side = 'right'; slot = pos - 6 + 1; }
       this.visitBought.add(face);
       if (item.limited) this.limitedBought.add(face);
       boughtAnything = true;
-      this.ev(`🛒 购买 ${face}（${item.price}金币）→ 放在${side}骰子第${slot}面`
-        + (item.limited ? '（限购，本局下架）' : ''));
+      this.ev(`🛒 Bought ${face} for ${item.price} coins → placed on face ${slot} of the ${side} die`
+        + (item.limited ? ' (one per game — now sold out)' : ''));
     }
     return boughtAnything;
   }
@@ -992,14 +1006,14 @@ class Game {
     for (let i = 0; i < HEROES.length; i++) if (this.canPay(HEROES[i].cost)) affordable.push(i);
     const legal = affordable.concat([15]);
     const idx = await this.decide('hero', {}, legal);
-    if (idx === 15) { this.ev('取消购买英雄'); return false; }
+    if (idx === 15) { this.ev('Cancelled hero purchase'); return false; }
     const hero = HEROES[idx];
-    if (!this.payCost(hero.cost)) { this.ev('资源不足！'); return false; }
+    if (!this.payCost(hero.cost)) { this.ev('Not enough resources!'); return false; }
     this.heroesBought.push(hero.name);
     this.rewardBuffer += hero.score;
     const costStr = Object.entries(hero.cost)
-      .map(([k, v]) => `${v}${k === 'red' ? '红' : k === 'blue' ? '蓝' : '金币'}`).join(' ');
-    this.ev(`🦸 购买英雄：${hero.name}（费用 ${costStr}，分值 ⭐${hero.score}）`);
+      .map(([k, v]) => `${v} ${k === 'red' ? 'red' : k === 'blue' ? 'blue' : 'coins'}`).join('  ');
+    this.ev(`🦸 Bought ${hero.name} (cost ${costStr}, worth ⭐${hero.score})`);
     if (hero.effect === 'immediate') await this.triggerImmediate(hero);
     return true;
   }
@@ -1007,65 +1021,66 @@ class Game {
   async triggerImmediate(hero) {
     const hid = hero.id;
     if (hid === 'wild_spirit') {
-      this.ev('🌿 野灵：获得 3 蓝色资源 + 3 金币');
-      await this.gainResources({ blue: 3, coin: 3 }, '野灵');
+      this.ev('🌿 Wild Spirits: gained 3 blue + 3 coins');
+      await this.gainResources({ blue: 3, coin: 3 }, 'Wild Spirits');
     } else if (hid === 'sphinx') {
       const idx = await this.decide('die', {}, [0, 1]);
       const die = idx === 0 ? this.left : this.right;
-      this.ev(`🦁 斯芬克斯：${idx === 0 ? '左' : '右'}骰子单独投掷 4 次`);
+      this.ev(`🦁 Sphinx: the ${idx === 0 ? 'left' : 'right'} die rolls alone, 4 times`);
       for (let i = 0; i < 4; i++) {
         const face = die[this.stream.integers(6)];
-        this.ev(`  斯芬克斯第${i + 1}次：[${face}]`);
-        await this.resolveFace(face, 1, '斯芬克斯');
+        this.ev(`  Sphinx roll ${i + 1}: [${face}]`);
+        await this.resolveFace(face, 1, 'Sphinx');
       }
     } else if (hid === 'crab') {
-      this.ev('🦀 巨蟹：双骰同时投掷 2 次');
+      this.ev('🦀 Cancer: both dice roll together, twice');
       for (let i = 0; i < 2; i++) {
         const lf = this.left[this.stream.integers(6)];
         const rf = this.right[this.stream.integers(6)];
-        this.ev(`  巨蟹第${i + 1}次：左[${lf}] 右[${rf}]`);
-        await this.resolveTwoFaces(lf, rf, '巨蟹');
+        this.ev(`  Cancer roll ${i + 1}: left [${lf}] right [${rf}]`);
+        await this.resolveTwoFaces(lf, rf, 'Cancer');
       }
     } else if (hid === 'helm') {
       const legal = [];
       for (let i = 0; i < 12; i++) legal.push(i);
       const pos = await this.decide('helm', {}, legal);
-      const side = pos < 6 ? '左' : '右';
+      const side = pos < 6 ? 'left' : 'right';
       const slot = pos < 6 ? pos + 1 : pos - 6 + 1;
-      if (pos < 6) this.left[pos] = '三倍'; else this.right[pos - 6] = '三倍';
-      this.ev(`🪖 隐形头盔：${side}骰子第${slot}面 → 三倍(X3)`);
+      if (pos < 6) this.left[pos] = 'Triple'; else this.right[pos - 6] = 'Triple';
+      this.ev(`🪖 Helmet of Invisibility: face ${slot} of the ${side} die → Triple (×3)`);
     } else if (hid === 'chest') {
       this.redCap += 3; this.blueCap += 3; this.coinCap += 4;
-      this.ev(`📦 宝箱：红/蓝上限+3、金币上限+4（红${this.redCap} 蓝${this.blueCap} 金${this.coinCap}）`);
+      this.ev(`📦 The Blacksmith's Chest: +3 red cap, +3 blue cap, +4 coin cap`
+        + ` (red ${this.redCap}, blue ${this.blueCap}, coins ${this.coinCap})`);
     } else if (hid === 'hammer') {
       if (this.hammerCap === 0) this.hammerTrack = 0;
       this.hammerCap += 30;
-      this.ev(`🔨 锤子：锤子轨道上限 +30（当前上限 ${this.hammerCap}）`);
+      this.ev(`🔨 The Blacksmith's Hammer: hammer track cap +30 (now ${this.hammerCap})`);
     }
   }
 
   async extraAction() {
-    if (this.red < 2) { this.ev('红色资源不足 2，跳过额外行动阶段'); return; }
+    if (this.red < 2) { this.ev('Fewer than 2 red — skipping the Extra Action phase'); return; }
     if (this.red === 2 && this.blue === 0 && this.coin < 2) {
-      this.ev('资源不足进行有效行动，跳过额外行动阶段'); return;
+      this.ev('Not enough resources for a real action — skipping the Extra Action phase'); return;
     }
     this.red -= 2;
-    this.ev('支付 2 红色资源，进入额外行动阶段');
+    this.ev('Paid 2 red — the Extra Action phase begins');
     const acted = await this.actionMenu(true);
-    if (!acted) { this.red += 2; this.ev('额外行动未进行，返还 2 红色资源'); }
+    if (!acted) { this.red += 2; this.ev('No extra action taken — 2 red refunded'); }
   }
 
   summary() {
-    const h = this.hammerCap > 0 ? `，锤 ${this.hammerTrack}/${this.hammerCap}` : '';
-    this.ev(`  状态：红 ${this.red}/${this.redCap} 蓝 ${this.blue}/${this.blueCap} `
-      + `金 ${this.coin}/${this.coinCap} 分 ${this.score}${h}`);
+    const h = this.hammerCap > 0 ? `, hammer ${this.hammerTrack}/${this.hammerCap}` : '';
+    this.ev(`  Status: red ${this.red}/${this.redCap}  blue ${this.blue}/${this.blueCap}  `
+      + `coins ${this.coin}/${this.coinCap}  points ${this.score}${h}`);
   }
 
-  /* ---------------- 主循环（async） ---------------- */
+  /* ---------------- Main loop (async) ---------------- */
   async play(agent, startTurn = null, hooks = null) {
     if (startTurn === null) { this.reset(); startTurn = 1; }
-    this.agent = agent;            // 注意：reset() 会把 agent 置空，需在 reset 之后赋值
-    if (this.left.length === 0) {  // skipReset 构造出来的对局：补一次 reset
+    this.agent = agent;            // reset() clears the agent, so assign it afterwards
+    if (this.left.length === 0) {  // built with skipReset: run the missing reset() now
       this.reset();
       this.agent = agent;
     }
@@ -1073,18 +1088,18 @@ class Game {
       this.turn = turn;
       this.turnSnap = this.takeSnapshot();
       this.turnDecisions = [];
-      this.ev(`════════ 第 ${turn} 回合 ════════`);
-      if (hooks && hooks.onEvent) await hooks.onEvent(`════════ 第 ${turn} 回合 ════════`, this);
+      this.ev(`════════ Turn ${turn} ════════`);
+      if (hooks && hooks.onEvent) await hooks.onEvent(`════════ Turn ${turn} ════════`, this);
       this.phase = 'roll';
       this.supportPool = this.heroesBought.filter(h => SUPPORT_HEROES.includes(h));
       for (let i = 1; i <= 4; i++) {
         this.rollNum = i;
         const faceL = this.left[this.stream.integers(6)];
         const faceR = this.right[this.stream.integers(6)];
-        const rollText = `🎲 第${i}次投掷：左[${faceL}] 右[${faceR}]`;
+        const rollText = `🎲 Roll ${i}: left [${faceL}] right [${faceR}]`;
         this.ev(rollText);
         if (hooks && hooks.onEvent) {
-          await hooks.onEvent(rollText, this);       // 人类/AI 演示的「投掷停顿」在这里发生
+          await hooks.onEvent(rollText, this);       // the roll pause of the human/AI demo happens here
         }
         await this.resolveTwoFaces(faceL, faceR, '');
       }
@@ -1093,13 +1108,13 @@ class Game {
       await this.supportPhase();
       this.summary();
       this.phase = 'main';
-      this.ev('📌 主要行动阶段');
-      if (hooks && hooks.onEvent) await hooks.onEvent('📌 主要行动阶段', this);
+      this.ev('📌 Main Action phase');
+      if (hooks && hooks.onEvent) await hooks.onEvent('📌 Main Action phase', this);
       await this.actionMenu(false);
       this.summary();
       this.phase = 'extra';
-      this.ev('➕ 额外行动阶段');
-      if (hooks && hooks.onEvent) await hooks.onEvent('➕ 额外行动阶段', this);
+      this.ev('➕ Extra Action phase');
+      if (hooks && hooks.onEvent) await hooks.onEvent('➕ Extra Action phase', this);
       await this.extraAction();
       this.summary();
       if (hooks && hooks.onTurnEnd) await hooks.onTurnEnd(this, turn);
@@ -1108,14 +1123,14 @@ class Game {
     let heroTotal = 0;
     for (const h of this.heroesBought) heroTotal += HERO_SCORE[h];
     const total = this.score + heroTotal;
-    this.ev(`🏁 游戏结束：游戏分 ${this.score} + 英雄分 ${heroTotal} = 最终总分 ${total}`);
-    this.ev(`🎲 最终骰面：左 [${this.left.join(' | ')}]  右 [${this.right.join(' | ')}]`);
-    this.ev(`🏆 已购英雄：${this.heroesBought.length ? this.heroesBought.join(' → ') : '无'}`);
+    this.ev(`🏁 Game over — game score ${this.score} + heroes ${heroTotal} = final score ${total}`);
+    this.ev(`🎲 Final board — left [${this.left.join(' | ')}]  right [${this.right.join(' | ')}]`);
+    this.ev(`🏆 Heroes bought: ${this.heroesBought.length ? this.heroesBought.join(' → ') : 'none'}`);
     this.drainReward();
     return total;
   }
 
-  /* ---------------- 快照/恢复（浅层搜索用） ---------------- */
+  /* ---------------- Snapshot / restore (used by the shallow search) ---------------- */
   takeSnapshot() {
     return {
       left: this.left.slice(), right: this.right.slice(),
@@ -1152,10 +1167,12 @@ class Game {
   }
 
   cloneFromTurnStart() {
-    /** 从当前回合起点克隆（随机流回到回合起点位置）：搜索结果分支用。
-     *  注意 1：skipReset=true —— 克隆不能消费随机流记录，
-     *          否则会打乱分支重放（这里的位置由 restoreSnapshot 精确设置）。
-     *  注意 2：agent 继承父对局（Python 版同样在 clone 后由 play() 重新赋值）。 */
+    /** Clone from the start of the current turn (stream rewound to that point) for
+     *  search branches.
+     *  Note 1: skipReset=true — the clone must not consume a stream record, otherwise
+     *          branch replay desynchronises (restoreSnapshot sets the position exactly).
+     *  Note 2: the agent is inherited from the parent game (as in Python, where play()
+     *          reassigns it after cloning). */
     const c = new Game(this.stream.fork(), { log: false, skipReset: true });
     c.restoreSnapshot(this.turnSnap);
     c.agent = this.agent;
@@ -1168,8 +1185,8 @@ class Game {
   }
 }
 
-/* 既可以在浏览器里作为全局脚本加载（window.Game 等），也可以在 Node 里 require 使用。
- * 在浏览器中：Game/DrawStream/... 直接是全局常量；在 Node 中：module.exports。 */
+/* Loadable either as a classic browser script (Game, DrawStream, ... become globals)
+ * or as a CommonJS module via require() in Node. */
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { Game, DrawStream, FACES, SHOP_ITEMS, HEROES, HERO_SCORE,
                      SUPPORT_HEROES, DECISION_TYPES, SEG_OFFSET, N_ACTIONS,
@@ -1179,14 +1196,14 @@ if (typeof module !== 'undefined' && module.exports) {
 </script>
 <script>
 /* ============================================================================
- * 骰子英雄 · 模型推理（model.js）
+ * Dice Heroes · Model inference (model.js)
  * ---------------------------------------------------------------------------
- * 读取 model/weights.bin（int8 对称量化，per-output-channel scale）+ model/meta.json，
- * 在运行时**反量化**为 float32 做全精度推理。
+ * Reads model/weights.bin (symmetric int8 quantization, per-output-channel scale) plus
+ * model/meta.json, and **dequantizes** to float32 at runtime for full-precision inference.
  *
- * 网络结构：
- *   策略网 PolicyNet：260 → 1024 → 1024 → 1024（ReLU）→ 策略头 94 + 价值头 1
- *   价值网 ValueNet ：260 → 512 → 512（ReLU）→ 1
+ * Architectures:
+ *   PolicyNet: 260 -> 1024 -> 1024 -> 1024 (ReLU) -> policy head 94 + value head 1
+ *   ValueNet : 260 -> 512 -> 512 (ReLU) -> 1
  * ==========================================================================*/
 
 class Linear {
@@ -1194,7 +1211,7 @@ class Linear {
     this.inDim = inDim;
     this.outDim = outDim;
     this.bias = bias;
-    /* 反量化一次并缓存为 float32（运行时全精度推理） */
+    /* dequantize once and cache as float32 (full-precision inference at runtime) */
     this.wf = new Float32Array(inDim * outDim);
     for (let o = 0; o < outDim; o++) {
       const s = scale[o];
@@ -1221,15 +1238,17 @@ function reluInPlace(x) {
   return x;
 }
 
-/** 载入权重；返回 { meta, policy, value }，其中每项为 [{layer, name}]
+/** Load the weights; returns { meta, policy, value }, each entry being [{layer, name}]
  *
- * 支持两种存储格式（由 meta.quant.type 决定）：
- *   'int8-per-output-channel' —— 权重存 int8 + 每输出通道一个 scale（正式版，体积小）
- *   'none-float32'            —— 权重直接存 float32（**仅用于量化影响对照实验**）
- * 两者在运行时都还原成 float32 做全精度推理；差别只在"存储时丢了多少精度"。
+ * Two storage formats are supported (chosen by meta.quant.type):
+ *   'int8-per-output-channel' — weights stored as int8 plus one scale per output channel
+ *                               (the shipped format; small download)
+ *   'none-float32'            — weights stored directly as float32 (**only for
+ *                               quantization A/B experiments**)
+ * Both are restored to float32 at runtime; the only difference is how much precision the
+ * storage step throws away.
  */
-
-/** 把内嵌的 base64 权重解码为 ArrayBuffer（等价于 fetch 回来的二进制） */
+/** Decode the embedded base64 weights into an ArrayBuffer (the same bytes fetch would return) */
 function embeddedWeightsBuffer() {
   const b64 = window.__DSH_EMBED__.weightsB64;
   const bin = atob(b64);
@@ -1238,7 +1257,7 @@ function embeddedWeightsBuffer() {
   return bytes.buffer;
 }
 
-/** 载入内嵌的权重；返回 { meta, policy, value }，其中每项为 [{layer, name}] */
+/** Load the embedded weights; returns { meta, policy, value } with [{layer, name}] entries */
 async function loadWeights() {
   const meta = window.__DSH_EMBED__.modelMeta;
   const buf = embeddedWeightsBuffer();
@@ -1252,7 +1271,7 @@ async function loadWeights() {
     if (isF32) {
       const w = sliceF32(`${L.name}.f32`);
       if (w.length !== L.in * L.out) {
-        throw new Error(`float32 权重形状不符：${L.name} ${L.in}×${L.out}，实际 ${w.length}`);
+        throw new Error(`float32 weight shape mismatch: ${L.name} ${L.in}x${L.out}, got ${w.length}`);
       }
       return {
         name: L.name,
@@ -1263,10 +1282,10 @@ async function loadWeights() {
     const q = sliceI8(`${L.name}.q`);
     const scale = sliceF32(`${L.name}.scale`);
     if (q.length !== L.in * L.out) {
-      throw new Error(`权重形状不符：${L.name} ${L.in}×${L.out}，实际 ${q.length}`);
+      throw new Error(`weight shape mismatch: ${L.name} ${L.in}x${L.out}, got ${q.length}`);
     }
     if (scale.length !== L.out) {
-      throw new Error(`量化 scale 数量不符：${L.name} 期望 ${L.out}，实际 ${scale.length}`);
+      throw new Error(`quantization scale count mismatch: ${L.name} expected ${L.out}, got ${scale.length}`);
     }
     return {
       name: L.name,
@@ -1277,7 +1296,7 @@ async function loadWeights() {
   return out;
 }
 
-/** 策略网前向：返回 { logits: Float32Array(94), value: number } */
+/** Policy net forward: returns { logits: Float32Array(94), value: number } */
 function policyForward(net, x) {
   let h = x;
   let logits = null;
@@ -1295,7 +1314,7 @@ function policyForward(net, x) {
   return { logits, value };
 }
 
-/** 价值网前向：返回标量 V(s)（剩余期望得分） */
+/** Value net forward: returns the scalar V(s) (expected remaining score) */
 function valueForward(net, x) {
   let h = x;
   const layers = net.value;
@@ -1307,7 +1326,7 @@ function valueForward(net, x) {
   return h[0];
 }
 
-/** 掩码 softmax（等价于 Python 端 masked_probs） */
+/** Masked softmax (equivalent to masked_probs on the Python side) */
 function maskedProbs(logits, mask) {
   const n = logits.length;
   const out = new Float32Array(n);
@@ -1335,20 +1354,23 @@ if (typeof module !== 'undefined' && module.exports) {
 </script>
 <script>
 /* ============================================================================
- * 骰子英雄 · 智能体（agents.js）
+ * Dice Heroes · Agents (agents.js)
  * ---------------------------------------------------------------------------
- * 四类智能体（与 Python 端等价）：
- *   GreedyAgent   —— 策略网 argmax（评估/模拟内部使用）
- *   SampleAgent   —— 按策略分布采样（训练用，网页端仅用于展示温度效果）
- *   SearchAgent   —— 浅层搜索：候选动作 × (depth 步模拟 + V 叶子)
- *   ScriptedAgent —— 回放预先录制好的决策序列（用于逐帧复现 AI 对局并校验）
+ * Four agents (equivalent to the Python ones):
+ *   GreedyAgent   — policy argmax (used by evaluation and inside simulations)
+ *   SampleAgent   — samples from the policy distribution (training only; here it just
+ *                   demonstrates the effect of temperature)
+ *   SearchAgent   — shallow search: candidate actions x (depth-step simulation + V leaf)
+ *   ScriptedAgent — replays a recorded decision sequence (frame-by-frame verification of
+ *                   an AI game)
  *
- * 所有 decide 都是 async（人类智能体会 await 用户点击；AI 智能体立即返回）。
+ * Every decide() is async: human agents await a click, AI agents resolve immediately.
  * ==========================================================================*/
 
-/* 依赖解析：
- *   浏览器 —— game.js / model.js 已把常量与函数挂到全局，直接引用即可；
- *   Node    —— 通过 require 取值，并放到 globalThis 上（避免与全局 const 重复声明冲突）。 */
+/* Dependency resolution:
+ *   Browser — game.js / model.js already expose the constants and functions as globals.
+ *   Node    — require() them and attach to globalThis so the global `const` declarations
+ *             do not collide. */
 if (typeof module !== 'undefined' && module.exports) {
   const G = require('./game.js');
   const M = require('./model.js');
@@ -1360,7 +1382,8 @@ if (typeof module !== 'undefined' && module.exports) {
 
 const SEARCH_TYPES = new Set(['support', 'main', 'extra', 'shop_item', 'shop_place', 'hero', 'hammer']);
 
-/** 模拟内部：先重放强制决策，之后交给基础策略；超过 stopAfter 步抛出截断 */
+/** Inside a simulation: replay the forced decisions, then hand over to the base policy;
+ *  throws a truncation signal once stopAfter steps have been served */
 class StopSimulation extends Error {
   constructor(rewardSum, vec) {
     super('stop');
@@ -1381,7 +1404,7 @@ class SimAgent {
   async decide(vec, mask, game) {
     if (this.forced.length) {
       const [dtype, local] = this.forced.shift();
-      if (dtype !== game.dtype) throw new Error(`重放不一致: ${dtype} vs ${game.dtype}`);
+      if (dtype !== game.dtype) throw new Error(`replay mismatch: ${dtype} vs ${game.dtype}`);
       const [off] = SEG_OFFSET[dtype];
       return off + local;
     }
@@ -1425,7 +1448,7 @@ class SampleAgent {
   }
 }
 
-/** 回放智能体：按录制好的 (type, localAction) 序列作答，并校验类型一致 */
+/** Replay agent: answers from a recorded (type, localAction) sequence and checks the types match */
 class ScriptedAgent {
   constructor(decisions, options = {}) {
     this.decisions = decisions;
@@ -1437,14 +1460,14 @@ class ScriptedAgent {
   credit() {}
   async decide(vec, mask, game) {
     const rec = this.decisions[this.pos];
-    if (!rec) throw new Error(`回放越界（第 ${this.pos} 个决策）`);
+    if (!rec) throw new Error(`replay ran past the recording (decision ${this.pos})`);
     if (this.strict && rec.type !== game.dtype) {
-      throw new Error(`第 ${this.pos} 个决策类型不符：录制 ${rec.type}，实际 ${game.dtype}`);
+      throw new Error(`decision ${this.pos} has the wrong type: recorded ${rec.type}, got ${game.dtype}`);
     }
     const [off] = SEG_OFFSET[game.dtype];
     const a = off + rec.action;
     if (mask[a] !== 1) {
-      throw new Error(`第 ${this.pos} 个决策非法：type=${game.dtype} action=${rec.action}`);
+      throw new Error(`decision ${this.pos} is illegal: type=${game.dtype} action=${rec.action}`);
     }
     this.pos++;
     this.log.push({ type: game.dtype, action: rec.action, ctx: game.ctx });
@@ -1454,8 +1477,9 @@ class ScriptedAgent {
 }
 
 /**
- * 浅层搜索智能体（对应 Python 的 search_agent.SearchAgent）
- *   estimate(候选) = depth 步模拟中获得的分 + V(第 depth 步状态)；第 7 回合起直接模拟到终局
+ * Shallow-search agent (the counterpart of search_agent.SearchAgent in Python)
+ *   estimate(candidate) = points earned in a depth-step simulation + V(state at depth);
+ *   from turn 7 on it simulates straight to the end
  */
 class SearchAgent {
   constructor(weights, options = {}) {
@@ -1463,16 +1487,19 @@ class SearchAgent {
     this.depth = options.depth != null ? options.depth : 12;
     this.topk = options.topk != null ? options.topk : 4;
     this.searchTypes = options.searchTypes || SEARCH_TYPES;
-    // forceGreedy: 合规模式 —— 不做任何分支模拟，全部决策由策略网 argmax 给出
-    // （决策只依赖当前可观测状态；见 合规性审计报告.md）
+    // forceGreedy: compliant mode — no branch simulation at all, every decision is the
+    // policy argmax (it depends only on the current observable state; see the compliance audit)
     this.forceGreedy = !!options.forceGreedy;
-    this.onDecision = options.onDecision || null;   // 供界面展示「本条决策的候选估值」
-    this.onSlow = options.onSlow || null;           // 单步搜索过慢时提示界面
+    this.onDecision = options.onDecision || null;   // lets the UI show candidate values for this decision
+    this.onSlow = options.onSlow || null;           // warn the UI when one search takes too long
     this.slowThresholdMs = options.slowThresholdMs || 2500;
     this.greedy = new GreedyAgent(weights);
+    // repair: optional deterministic rule layer (repair.js). In compliant mode this is the
+    // second half of the delivered configuration.
+    this.repair = options.repair || null;
     this.nSearched = 0;
     this.nSim = 0;
-    this.lastEval = null;      // 最近一次决策的候选评估（供横幅展示）
+    this.lastEval = null;      // evaluation of the latest decision (shown in the banner)
   }
 
   credit() {}
@@ -1506,9 +1533,11 @@ class SearchAgent {
   async decide(vec, mask, game) {
     const dtype = game.dtype;
     if (this.forceGreedy || !this.searchTypes.has(dtype)) {
-      const a = await this.greedy.decide(vec, mask, game);
+      let a = await this.greedy.decide(vec, mask, game);
+      const aRaw = a;
+      if (this.repair) a = this.repair.fix(a, mask, game);
       this.lastEval = { searched: false, type: dtype, action: a - SEG_OFFSET[dtype][0],
-                        ms: 0 };
+                        rawAction: aRaw - SEG_OFFSET[dtype][0], repaired: a !== aRaw, ms: 0 };
       if (this.onDecision) await this.onDecision(dtype, vec, mask, game);
       return a;
     }
@@ -1532,11 +1561,16 @@ class SearchAgent {
     if (this.onDecision) await this.onDecision(dtype, vec, mask, game);
     const cost = Date.now() - tStart;
     if (this.onSlow && cost > this.slowThresholdMs) this.onSlow(cost);
-    return off + bestA;
+    let aOut = off + bestA;
+    if (this.repair) {
+      const fixed = this.repair.fix(aOut, mask, game);
+      if (fixed !== aOut) { this.lastEval.repaired = true; aOut = fixed; }
+    }
+    return aOut;
   }
 }
 
-/* 浏览器环境：把类挂到全局，供 UI 脚本使用 */
+/* Browser: expose the classes as globals for the UI script */
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { GreedyAgent, SampleAgent, ScriptedAgent, SearchAgent,
                      SimAgent, StopSimulation, SEARCH_TYPES };
@@ -1548,46 +1582,270 @@ if (typeof module !== 'undefined' && module.exports) {
 </script>
 <script>
 /* ============================================================================
- * 骰子英雄 · 界面与模式调度（ui.js）
+ * Dice Heroes · Rule repair layer (repair.js)
  * ---------------------------------------------------------------------------
- * 两种模式：
- *   人类游玩 —— 用同一个游戏引擎 + HumanAgent（弹窗交互），走完整 9 回合；
- *   AI 演示  —— 用同一个引擎 + SearchAgent，在**全新随机局面**上现场决策。
- *               默认 `APP.compliantMode !== false` → **合规模式**：
- *               每步只是 `argmax(策略网(当前 260 维可观测状态))`，
- *               不做分支模拟、不读未来随机流；单步前向约 11~26 ms。
- *               把 `APP.compliantMode` 设为 false 可切回旧的浅层搜索（**不合规**，仅作对照）。
- * 两种模式结束后都进入结算界面，并可返回初始界面。
+ * A deterministic rule layer that mirrors R1-R4 of `repair_policy.py` one-for-one.
+ *
+ * Why the browser needs it too:
+ *   the delivered configuration is "policy argmax + repair layer R1-R4".
+ *   The original AI demo here did plain greedy, i.e. only half of that configuration
+ *   (measured: the repair layer alone is worth +1.04 points, nearly all of it from R4).
+ *
+ * Every rule only touches decisions with a **strict dominance** argument, so none of them
+ * can make a position worse:
+ *   R1 owl      — The Guardian's Owl picked a resource already at its cap (gain 0)
+ *                 -> switch to one that actually pays out
+ *   R2 hammer   — coins are provably useless (last turn or pool already full) and the next
+ *                 milestone is reachable -> convert exactly enough to reach it
+ *   R3 support  — The Silver Hind is still available but the pick was "end support"
+ *                 -> use the Hind instead (its payoff is always >= 0)
+ *   R4 overflow — part of the incoming coins would overflow (and be discarded)
+ *                 -> convert that part into hammer progress
+ *
+ * Compliance: all four rules read only the **current observable state** (resources, caps,
+ * hammer track, turn, coins just gained, action mask). No draw stream, no simulation.
+ * ==========================================================================*/
+(function (global) {
+  'use strict';
+
+  /* Dependency resolution: globals in the browser, require() in Node (attached to
+     globalThis to avoid duplicate declarations) */
+  if (typeof module !== 'undefined' && module.exports) {
+    const G = require('./game.js');
+    globalThis.SEG_OFFSET = G.SEG_OFFSET;
+  }
+
+  const OWL_OFF = SEG_OFFSET.owl[0];
+  const HAMMER_OFF = SEG_OFFSET.hammer[0];
+  const SUPPORT_OFF = SEG_OFFSET.support[0];
+  const SUPPORT_END = 3;      // support phase: Elder 0 / Hind 1 / Owl 2 / end 3
+  const SUPPORT_DEER = 1;
+
+  /** Map a global action id back to its decision type.
+   *  Do NOT read game.dtype: The Silver Hind / Sphinx / The Guardian's Owl / Helmet of
+   *  Invisibility all raise an extra die/owl/helm decision *inside* a support/hero decision,
+   *  overwriting dtype (pitfall log QQ-054). */
+  function typeOf(action) {
+    for (const name in SEG_OFFSET) {
+      const [off, size] = SEG_OFFSET[name];
+      if (action >= off && action < off + size) return name;
+    }
+    return null;
+  }
+
+  /** Milestone points granted the moment k coins move onto the track (same rule as
+   *  addHammer in game.js: every multiple of 15 pays +10 for the 1st/3rd/5th step and
+   *  +15 for the 2nd/4th/6th). */
+  function milestonePoints(track, k, cap) {
+    if (k <= 0 || cap <= 0) return 0;
+    const nw = Math.min(track + k, cap);
+    let s = 0;
+    for (let j = 1; j * 15 <= cap; j++) {
+      const th = j * 15;
+      if (track < th && th <= nw) s += (j % 2 === 1) ? 10 : 15;
+    }
+    return s;
+  }
+
+  const RULES = ['owl', 'hammer', 'support', 'overflow'];
+
+  class RepairLayer {
+    /** which: 'all' (R1-R4, the delivered configuration) | 'both' (R1+R2 only, legacy
+     *  meaning) | the name of a single rule */
+    constructor(options = {}) {
+      this.which = options.which || 'all';
+      this.log = options.log !== false;   // write every fix into the game log (visible in the UI)
+      this.resetStat();
+    }
+
+    resetStat() {
+      this.stat = {
+        owl_seen: 0, owl_fixed: 0,
+        hammer_seen: 0, hammer_fixed: 0, coin_saved: 0,
+        deer_seen: 0, deer_fixed: 0,
+        of_seen: 0, of_fixed: 0, overflow_saved: 0,
+        total_fixed: 0,
+      };
+    }
+
+    on(name) {
+      // 'all' contains only the four **provably weakly dominant** rules (same as Python)
+      if (this.which === 'all') return RULES.indexOf(name) >= 0;
+      if (this.which === 'both') return name === 'owl' || name === 'hammer';
+      return this.which === name;
+    }
+
+    /** Apply the rules to the action the policy picked; returns the final action
+     *  (guaranteed to stay inside the legal mask). */
+    fix(a, mask, game) {
+      if (!game) return a;
+      const t = typeOf(a);
+      let out = a;
+      if (t === 'owl' && this.on('owl')) {
+        out = this._fixOwl(out, game);
+      } else if (t === 'hammer') {
+        // Same order as Python: R4 first (only the part that would be discarded),
+        // then R2 (top up to the next milestone)
+        if (this.on('overflow')) out = this._fixHammerOverflow(out, game);
+        if (this.on('hammer')) out = this._fixHammer(out, game);
+      } else if (t === 'support' && this.on('support')) {
+        out = this._fixSupport(out, mask, game);
+      }
+      if (out !== a) {
+        this.stat.total_fixed++;
+        if (mask && mask[out] !== 1) return a;   // safety net: the result must stay legal
+      }
+      return out;
+    }
+
+    _note(game, text) {
+      if (this.log && game && typeof game.ev === 'function') game.ev(text);
+    }
+
+    // ---- R1: the Owl picked a resource already at its cap ----
+    _fixOwl(a, g) {
+      this.stat.owl_seen++;
+      const k = a - OWL_OFF;
+      const gains = [
+        (g.red < g.redCap) ? 1 : 0,
+        (g.blue < g.blueCap) ? 1 : 0,
+        (g.coin < g.coinCap) ? 1 : 0,
+      ];
+      if (gains[k] > 0) return a;
+      let best = 0;
+      for (let i = 1; i < 3; i++) if (gains[i] > gains[best]) best = i;
+      if (gains[best] <= 0) return a;
+      this.stat.owl_fixed++;
+      const label = ['🔴 1 Red', '🔵 1 Blue', '💰 1 Coin'][best];
+      this._note(g, `🛠️ Rule R1: that resource is capped — switched to ${label} (would have gained 0)`);
+      return OWL_OFF + best;
+    }
+
+    // ---- R4: coins that would overflow are converted to hammer progress ----
+    _fixHammerOverflow(a, g) {
+      this.stat.of_seen++;
+      const k = a - HAMMER_OFF;
+      const ctx = g.ctx || {};
+      const cv = ctx.coins_gained | 0;
+      const maxConv = ctx.max_conv | 0;
+      if (maxConv <= 0 || cv <= 0) return a;
+      const space = Math.max(0, g.coinCap - g.coin);
+      if (cv <= space) return a;                 // nothing would be discarded
+      const need = Math.min(cv - space, maxConv); // exactly the doomed part
+      if (need <= k) return a;
+      this.stat.of_fixed++;
+      this.stat.overflow_saved += (need - k);
+      this._note(g, `🛠️ Rule R4: ${cv} incoming coin(s) but only ${space} fits — `
+        + `${cv - space} would be discarded, so ${need - k} went to the hammer (k ${k}→${need})`);
+      return HAMMER_OFF + need;
+    }
+
+    // ---- R2: coins are useless now, top up to the next milestone ----
+    _fixHammer(a, g) {
+      this.stat.hammer_seen++;
+      const k = a - HAMMER_OFF;
+      const ctx = g.ctx || {};
+      const cv = ctx.coins_gained | 0;
+      const maxConv = ctx.max_conv | 0;
+      if (maxConv <= 0 || k >= cv) return a;
+      if (!(g.turn >= 9 || g.coin >= g.coinCap)) return a;   // coins may still be useful — do not gamble
+      const track = g.hammerTrack, cap = g.hammerCap;
+      if (cap <= 0 || track >= cap) return a;
+      const nxt = (Math.floor(track / 15) + 1) * 15;
+      if (nxt > cap) return a;
+      const need = nxt - track;
+      if (need > maxConv || need <= k) return a;
+      const pts = milestonePoints(track, need, cap);
+      if (pts < need) return a;                  // the milestone pays less than it costs
+      this.stat.hammer_fixed++;
+      this.stat.coin_saved += (need - k);
+      this._note(g, `🛠️ Rule R2: coins are useless now — topped up to the next milestone `
+        + `(k ${k}→${need}, +${pts} points)`);
+      return HAMMER_OFF + need;
+    }
+
+    // ---- R3: ended support while The Silver Hind was still available ----
+    _fixSupport(a, mask, g) {
+      this.stat.deer_seen++;
+      const k = a - SUPPORT_OFF;
+      if (k !== SUPPORT_END) return a;
+      const deer = SUPPORT_OFF + SUPPORT_DEER;
+      if (!mask || mask[deer] < 0.5) return a;    // no Hind available this turn
+      this.stat.deer_fixed++;
+      this._note(g, '🛠️ Rule R3: The Silver Hind was still available — ending support would waste it');
+      return deer;
+    }
+  }
+
+  /** Same shape as Python's `RepairAgent`: wraps any policy (decide is async) */
+  class RepairAgent {
+    constructor(policy, options = {}) {
+      this.policy = policy;
+      this.layer = new RepairLayer(options);
+    }
+    get stat() { return this.layer.stat; }
+    credit(r) { if (this.policy && this.policy.credit) this.policy.credit(r); }
+    async decide(vec, mask, game) {
+      const a = await this.policy.decide(vec, mask, game);
+      return this.layer.fix(a, mask, game);
+    }
+  }
+
+  const api = { RepairLayer, RepairAgent, milestonePoints, typeOf, SUPPORT_END, SUPPORT_DEER };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  global.RepairLayer = RepairLayer;
+  global.RepairAgent = RepairAgent;
+  global.milestonePoints = milestonePoints;
+  global.repairTypeOf = typeOf;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+/* ============================================================================
+ * Dice Heroes · UI and mode orchestration (ui.js)
+ * ---------------------------------------------------------------------------
+ * Two modes, both driven by the very same game engine:
+ *   Play as Human — same engine + HumanAgent (modal dialogs), all 9 turns.
+ *   AI Demo       — same engine + SearchAgent, deciding live on a **fresh random board**.
+ *                   By default `APP.compliantMode !== false` → **compliant mode**:
+ *                   every step is just `argmax(policy net(current 260-d observable state))`,
+ *                   with no branch simulation and no peeking at future dice;
+ *                   a single forward pass takes roughly 11-26 ms.
+ *                   Set `APP.compliantMode` to false to switch back to the old shallow
+ *                   search (**non-compliant**, for comparison only).
+ * Both modes end on the results screen, from which you can return to the start menu.
  * ==========================================================================*/
 
-/* ------------------------------ 全局状态 ------------------------------ */
+/* ------------------------------ Global state ------------------------------ */
 const APP = {
-  weights: null,          // 量化模型（策略 + 价值）
-  demos: null,            // 离线录制的 AI 演示局
-  scenarios: null,        // 人类游玩场景（固定牌堆 + 投掷序列）
+  weights: null,          // quantized model (policy + value)
+  demos: null,            // offline-recorded AI demo games
+  scenarios: null,        // human-play scenarios (fixed deck + roll sequence)
   game: null,
   running: false,
   lastSummary: null,
 };
 
 const STATS = {
-  ai: 'v16（final_v16.pt，软标签蒸馏）',
-  // 交付模型：合规贪心口径，14 组独立评估种子 / 20,400 局配对
-  aiCompliantMean: 151.20, aiCompliantN: 20400,
-  aiCompliantDiff: '+4.48', aiCompliantT: '+28.40',
-  // 各口径均值（数值与来源一并标注，避免"看不出是哪个版本/多少局"）
-  humanExpert: 164.77, humanExpertN: 114,     // human_demos.npz（持续增长中）
+  ai: 'v17 (SYM_s404: left/right mirror augmentation + rule repair layer R1-R4)',
+  // Delivered model: compliant greedy + rule repair layer; 5 fresh seed groups / 7,500 paired games (2026-10-23)
+  aiCompliantMean: 158.41, aiCompliantN: 7500,
+  aiCompliantDiff: '+7.29', aiCompliantT: '+37.63',
+  // Reference means, each annotated with its source so the version and sample size stay visible
+  humanExpert: 164.77, humanExpertN: 114,     // human_demos.npz (still growing)
   heuristic: 104.02, random: 38.79,
-  oldDeliverMean: 146.78, oldDeliverN: 25400, // v11_bc，被 v16 取代
-  // 历史口径（v9 搜索，**不合规**：搜索时复用了真实对局随机流），仅作对照
+  oldDeliverMean: 146.78, oldDeliverN: 25400, // v11_bc, superseded by v16
+  // Legacy baseline (v9 search, **non-compliant**: it reused the real draw stream), for comparison only
   aiSearchMean: 150.86, aiSearchN: 525,
   aiGreedyMean: 145.4,
 };
 
-/* ------------------------------ 播放节奏 ------------------------------
- * 人类游玩：每次投掷等 0.7 秒（方便看清骰面），并自动隐藏需要点骰面的弹窗
- * AI 演示：每个决策等 3 秒（标准档），回合开始 / 阶段切换 / 投掷处另有停顿
- * 速度倍率：标准 3 秒 → 慢 ×1.6，快 ×0.5
+/* ------------------------------ Pacing ------------------------------
+ * Human play: 0.7 s after each roll so the dice are easy to read, and the dialog that
+ *             asks for a face is hidden automatically.
+ * AI demo:    3 s per decision on the standard setting; extra pauses at turn start,
+ *             phase changes and rolls.
+ * Speed:      standard 3 s -> slow x1.6, fast x0.5
  */
 const PACE = {
   roll: 700, phase: 900, turnStart: 1000, halfTurn: 900, decision: 3000,
@@ -1610,12 +1868,12 @@ function clearRollHighlight() {
     .forEach((el) => el.classList.remove('rolled'));
 }
 
-/** 高亮本回合/本次投掷抽到的骰面（根据对局记录） */
+/** Highlight the faces drawn by the latest roll, based on the game log */
 function highlightRecentRoll(game) {
   clearRollHighlight();
   const ev = game.events;
   for (let i = ev.length - 1; i >= 0; i--) {
-    const m = /第(\d+)次投掷：左\[(.+?)\] 右\[(.+?)\]/.exec(ev[i][2]);
+    const m = /Roll (\\d+): left \\[(.+?)\\] right \\[(.+?)\\]/.exec(ev[i][2]);
     if (m) {
       document.querySelectorAll('.dice-face-wrapper').forEach((el) => {
         const side = el.dataset.die;
@@ -1628,7 +1886,7 @@ function highlightRecentRoll(game) {
   }
 }
 
-/* ------------------------------ 小工具 ------------------------------ */
+/* ------------------------------ Small helpers ------------------------------ */
 const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const faceName = (f) => f;
@@ -1650,17 +1908,17 @@ function logLine(text, cls = '') {
   body.scrollTop = body.scrollHeight;
 }
 
-/* ------------------------------ 骰面渲染 ------------------------------ */
+/* ------------------------------ Face rendering ------------------------------ */
 function resourceCircle(kind, val, small) {
   const size = small ? ' small' : '';
   const cls = { red: 'red-face', blue: 'blue-face', coin: 'coin-face', score: 'score-face' }[kind];
-  const label = `${val}${kind === 'red' ? '红' : kind === 'blue' ? '蓝' : kind === 'coin' ? '金' : '分'}`;
+  const label = `${val}${kind === 'red' ? ' Red' : kind === 'blue' ? ' Blue' : kind === 'coin' ? ' Coins' : ' Points'}`;
   return `<div class="face-circle ${cls}${size}">${label}</div>`;
 }
 
 function faceHTML(name) {
   const f = FACES[name];
-  if (!f) return `<div class="face-square">？</div>`;
+  if (!f) return `<div class="face-square">?</div>`;
   if (f.type === 'triple') return `<div class="face-square">X3</div>`;
   if (f.type === 'choice') {
     const opts = f.options.map((o) => {
@@ -1693,73 +1951,75 @@ function renderDice() {
 
 function renderStatus() {
   const g = APP.game;
-  $('turnInfo').textContent = `📅 第 ${g.turn}/9 回合`;
+  $('turnInfo').textContent = `📅 Turn ${g.turn}/9`;
   const phaseLabel = {
-    roll: '🎲 掷骰', support: '🛡️ 支援', main: '📌 主要行动',
-    extra: '➕ 额外行动', end: '🏁 结算',
+    roll: '🎲 Roll', support: '🛡️ Support', main: '📌 Main Action',
+    extra: '➕ Extra Action', end: '🏁 Results',
   }[g.phase] || g.phase;
   $('phaseBadge').textContent = phaseLabel;
-  $('scoreDisplay').textContent = `⭐ 分数：${g.score}`;
+  $('scoreDisplay').textContent = `⭐ Score: ${g.score}`;
   const items = [
-    `<span class="resource-item resource-red">🔴 红色：<span class="resource-value">${g.red}</span><span class="resource-cap">/${g.redCap}</span></span>`,
-    `<span class="resource-item resource-blue">🔵 蓝色：<span class="resource-value">${g.blue}</span><span class="resource-cap">/${g.blueCap}</span></span>`,
-    `<span class="resource-item resource-coin">💰 金币：<span class="resource-value">${g.coin}</span><span class="resource-cap">/${g.coinCap}</span></span>`,
+    `<span class="resource-item resource-red">🔴 Red: <span class="resource-value">${g.red}</span><span class="resource-cap">/${g.redCap}</span></span>`,
+    `<span class="resource-item resource-blue">🔵 Blue: <span class="resource-value">${g.blue}</span><span class="resource-cap">/${g.blueCap}</span></span>`,
+    `<span class="resource-item resource-coin">💰 Coins: <span class="resource-value">${g.coin}</span><span class="resource-cap">/${g.coinCap}</span></span>`,
   ];
   if (g.hammerCap > 0) {
-    items.push(`<span class="resource-item resource-hammer">🔨 锤子：<span class="resource-value">${g.hammerTrack}</span><span class="resource-cap">/${g.hammerCap}</span></span>`);
+    items.push(`<span class="resource-item resource-hammer">🔨 Hammer: <span class="resource-value">${g.hammerTrack}</span><span class="resource-cap">/${g.hammerCap}</span></span>`);
   }
   $('resourcesPanel').innerHTML = items.join('');
   const counts = {};
   for (const h of g.heroesBought) counts[h] = (counts[h] || 0) + 1;
   const heroStr = Object.keys(counts).length
-    ? Object.entries(counts).map(([n, c]) => `${n}×${c}`).join('、') : '无';
-  $('supportBar').innerHTML = `🛡️ 已购英雄：<b>${heroStr}</b>　｜　`
-    + `🛡️ 本回合可用支援：<b>${g.supportPool.length ? g.supportPool.join('、') : '无'}</b>`;
+    ? Object.entries(counts).map(([n, c]) => `${n}×${c}`).join(', ') : 'none';
+  $('supportBar').innerHTML = `🛡️ Heroes: <b>${heroStr}</b>　|　`
+    + `🛡️ Support available this turn: <b>${g.supportPool.length ? g.supportPool.join(', ') : 'none'}</b>`;
   renderDice();
 }
 
-/* ------------------------------ 动作标签（横幅/日志共用） ------------------------------ */
+/* ------------------------------ Action labels (shared by banner and log) ------------------------------ */
 function actionLabel(dtype, action, ctx, game) {
   if (dtype === 'main' || dtype === 'extra') {
-    return ['🏪 进入骰面商店', '🦸 购买英雄卡牌', '⏭️ 跳过'][action] || String(action);
+    return ['🏪 Enter the Face Shop', '🦸 Buy a Hero', '⏭️ Skip'][action] || String(action);
   }
   if (dtype === 'shop_item') {
-    if (action === 16) return '✅ 结束购买';
+    if (action === 16) return '✅ Leave Shop';
     const it = SHOP_ITEMS[action];
-    return `🛒 购买「${it.face}」（${it.price} 金币）`;
+    return `🛒 Buy ${it.face} (${it.price} coins)`;
   }
   if (dtype === 'shop_place') {
-    const face = (ctx && ctx.item_face) || '骰面';
-    return `📍 把「${face}」放到${action < 6 ? '左' : '右'}骰第 ${action % 6 + 1} 面`;
+    const face = (ctx && ctx.item_face) || 'face';
+    return `📍 Place ${face} on face ${action % 6 + 1} of the ${action < 6 ? 'left' : 'right'} die`;
   }
   if (dtype === 'hero') {
-    if (action === 15) return '❌ 取消购买英雄';
+    if (action === 15) return '❌ Cancel hero purchase';
     const h = HEROES[action];
-    const cost = Object.entries(h.cost).map(([k, v]) => `${v}${k === 'red' ? '红' : '蓝'}`).join('+');
-    return `🦸 购买英雄「${h.name}」（${cost}，⭐${h.score}）`;
+    const cost = Object.entries(h.cost).map(([k, v]) => `${v} ${k === 'red' ? 'red' : 'blue'}`).join(' + ');
+    return `🦸 Buy ${h.name} (${cost}, ⭐${h.score})`;
   }
   if (dtype === 'support') {
-    return action === 3 ? '⏭️ 结束支援阶段' : `✨ 发动支援：${SUPPORT_HEROES[action]}`;
+    return action === 3 ? '⏭️ End Support Phase'
+      : `✨ Use support: ${SUPPORT_HEROES[action]}`;
   }
-  if (dtype === 'die') return action === 0 ? '🎲 选择左骰单独投掷' : '🎲 选择右骰单独投掷';
-  if (dtype === 'owl') return `🦉 猫头鹰选择：${['🔴 1 红', '🔵 1 蓝', '💰 1 金币'][action]}`;
+  if (dtype === 'die') return action === 0 ? '🎲 Roll the left die alone'
+    : '🎲 Roll the right die alone';
+  if (dtype === 'owl') return `🦉 The Guardian's Owl: ${['🔴 1 Red', '🔵 1 Blue', '💰 1 Coin'][action]}`;
   if (dtype === 'choice') {
     const opt = ctx && ctx.options ? ctx.options[action] : null;
     if (opt) {
       const parts = [];
-      if (opt[0]) parts.push(`${opt[0]} 红`);
-      if (opt[1]) parts.push(`${opt[1]} 蓝`);
-      if (opt[2]) parts.push(`${opt[2]} 金币`);
-      return `🎯 三选一：选 ${parts.join(' + ')}`;
+      if (opt[0]) parts.push(`${opt[0]} red`);
+      if (opt[1]) parts.push(`${opt[1]} blue`);
+      if (opt[2]) parts.push(`${opt[2]} coins`);
+      return `🎯 Choose One: ${parts.join(' + ')}`;
     }
-    return `🎯 三选一：选项 ${action + 1}`;
+    return `🎯 Choose One: option ${action + 1}`;
   }
-  if (dtype === 'hammer') return `⛏️ 把 ${action} 枚金币转化为锤子进度`;
-  if (dtype === 'helm') return `🪖 头盔：把${action < 6 ? '左' : '右'}骰第 ${action % 6 + 1} 面改成三倍(X3)`;
+  if (dtype === 'hammer') return `⛏️ Convert ${action} coin(s) into hammer progress`;
+  if (dtype === 'helm') return `🪖 Helmet: turn face ${action % 6 + 1} of the ${action < 6 ? 'left' : 'right'} die into Triple (×3)`;
   return `${dtype}:${action}`;
 }
 
-/* ------------------------------ 通用弹窗（可隐藏/恢复） ------------------------------ */
+/* ------------------------------ Generic modal (hide / restore) ------------------------------ */
 let RESTORE_BTN = null;
 
 function closeModals() {
@@ -1768,7 +2028,7 @@ function closeModals() {
   RESTORE_BTN = null;
 }
 
-/** 显示弹窗，并自动加一个「−」隐藏按钮（隐藏后出现「↖ 恢复选项」） */
+/** Show a modal and add a "−" hide button (hiding it reveals "↖ Show options") */
 function showModal(html) {
   closeModals();
   $('modalContainer').innerHTML = `<div class="modal-overlay"><div class="modal">${html}</div></div>`;
@@ -1776,13 +2036,13 @@ function showModal(html) {
   const modal = overlay.querySelector('.modal');
   const hideBtn = document.createElement('div');
   hideBtn.className = 'modal-hide-btn';
-  hideBtn.title = '隐藏弹窗（可从左下角恢复）';
+  hideBtn.title = 'Hide this dialog (restore it from the bottom-left button)';
   hideBtn.textContent = '−';
   modal.appendChild(hideBtn);
 
   const restore = document.createElement('div');
   restore.className = 'modal-restore-btn';
-  restore.textContent = '↖ 恢复选项';
+  restore.textContent = '↖ Show options';
   restore.style.display = 'none';
   document.body.appendChild(restore);
   RESTORE_BTN = restore;
@@ -1792,7 +2052,7 @@ function showModal(html) {
   return overlay;
 }
 
-/** 骰面选择模式：高亮所有骰面并接管点击（等价于原版的 setSelectableMode） */
+/** Face-picking mode: highlight every face and take over clicks (the old setSelectableMode) */
 function setSelectableMode(enabled, callback) {
   document.querySelectorAll('.dice-face-wrapper').forEach((el) => {
     if (enabled) {
@@ -1810,7 +2070,7 @@ function setSelectableMode(enabled, callback) {
   if (hint) hint.classList.toggle('hidden', !enabled);
 }
 
-/** 自动隐藏当前弹窗（需要点击骰子的场合使用），并保证「↖ 恢复选项」可用 */
+/** Auto-hide the current modal (whenever a face must be clicked) and keep "Show options" available */
 function autoHideModal() {
   const overlay = doc_overlay();
   if (overlay) overlay.style.display = 'none';
@@ -1826,7 +2086,7 @@ function showRestoreBtn() {
   if (RESTORE_BTN && RESTORE_BTN.parentNode) { RESTORE_BTN.style.display = 'block'; return; }
   const restore = document.createElement('div');
   restore.className = 'modal-restore-btn';
-  restore.textContent = '↖ 恢复选项';
+  restore.textContent = '↖ Show options';
   document.body.appendChild(restore);
   RESTORE_BTN = restore;
   restore.onclick = () => {
@@ -1836,7 +2096,7 @@ function showRestoreBtn() {
   };
 }
 
-/* ------------------------------ 人类智能体 ------------------------------ */
+/* ------------------------------ Human agent ------------------------------ */
 class HumanAgent {
   constructor(onDecision) { this.onDecision = onDecision; }
   credit() {}
@@ -1864,11 +2124,11 @@ class HumanAgent {
 
   askAction(legal, dtype) {
     return new Promise((resolve) => {
-      const labels = { 0: ['🏪 进入骰面商店', '花金币买骰面替换到骰子上'], 1: ['🦸 购买英雄卡牌', '用红/蓝资源换英雄与分数'], 2: ['⏭️ 跳过', '结束本阶段'] };
+      const labels = { 0: ['🏪 Enter the Face Shop', 'Spend coins on faces to swap onto your dice'], 1: ['🦸 Buy a Hero', 'Trade red/blue for heroes and points'], 2: ['⏭️ Skip', 'End this phase'] };
       const cards = legal.map((i) => `<div class="choice-card" data-i="${i}">
         <div class="big">${labels[i][0]}</div><div class="sub">${labels[i][1]}</div></div>`).join('');
-      const ov = showModal(`<h3>${dtype === 'extra' ? '额外行动阶段' : '主要行动阶段'}</h3>
-        <div class="hint">选择一个行动（每次进入只能执行一个）</div>
+      const ov = showModal(`<h3>${dtype === 'extra' ? 'Extra Action Phase' : 'Main Action Phase'}</h3>
+        <div class="hint">Pick one action — you get exactly one per visit</div>
         <div class="choices">${cards}</div>`);
       ov.querySelectorAll('.choice-card').forEach((el) => {
         el.onclick = () => { const i = +el.dataset.i; closeModals(); resolve(i); };
@@ -1879,17 +2139,17 @@ class HumanAgent {
   askShopItem(legal, game) {
     return new Promise((resolve) => {
       const cards = legal.map((i) => {
-        if (i === 16) return `<div class="choice-card" data-i="16"><div class="big">✅ 结束购买</div><div class="sub">离开商店</div></div>`;
+        if (i === 16) return `<div class="choice-card" data-i="16"><div class="big">✅ Leave Shop</div><div class="sub">Done shopping</div></div>`;
         const it = SHOP_ITEMS[i];
-        const limited = it.limited ? '（限购 1 次）' : '';
+        const limited = it.limited ? ' (one per game)' : '';
         const afford = game.coin >= it.price;
         return `<div class="choice-card ${afford ? '' : 'disabled'}" data-i="${i}">
           <div style="display:flex;justify-content:center;margin-bottom:4px">${faceHTML(it.face)}</div>
           <div class="big">${it.face}</div>
           <div class="sub">💰${it.price} ${limited}</div></div>`;
       }).join('');
-      const ov = showModal(`<h3>🏪 骰面商店</h3>
-        <div class="hint">当前金币 ${game.coin}／${game.coinCap}；同一访问内每种限购一次</div>
+      const ov = showModal(`<h3>🏪 Face Shop</h3>
+        <div class="hint">You have ${game.coin}/${game.coinCap} coins; limited faces can be bought once per game</div>
         <div class="choices">${cards}</div>`);
       ov.querySelectorAll('.choice-card').forEach((el) => {
         el.onclick = () => { const i = +el.dataset.i; closeModals(); resolve(i); };
@@ -1900,25 +2160,25 @@ class HumanAgent {
   askShopPlace(game) {
     return new Promise((resolve) => {
       const it = game.ctx && game.ctx.item_face;
-      const ov = showModal(`<h3>📍 选择要替换的骰面位</h3>
-        <div class="hint">已自动隐藏弹窗：请直接点击左右骰子上的骰面，把「${it}」放上去
-          （需要重新看选项时点左下角「↖ 恢复选项」）</div>
+      const ov = showModal(`<h3>📍 Choose the face to replace</h3>
+        <div class="hint">The dialog hid itself so you can click a face on either die and drop ${it} there.
+          Need the list again? Use "↖ Show options" at the bottom left.</div>
         <div class="choices"><div class="choice-card" data-i="-1">
-          <div class="big">↩ 取消本次购买</div><div class="sub">不花金币，留在商店</div></div></div>`);
+          <div class="big">↩ Cancel this purchase</div><div class="sub">Nothing is charged — you stay in the shop</div></div></div>`);
       let done = false;
       const finish = (i) => {
         if (done) return;
         done = true;
         setSelectableMode(false, null);
         closeModals();
-        resolve(i);                 // i < 0 表示取消本次购买
+        resolve(i);                 // i < 0 means "cancel this purchase"
       };
       setSelectableMode(true, (die, idx) => {
         if (die !== 'left' && die !== 'right') return;
         finish(die === 'left' ? idx : 6 + idx);
       });
       ov.querySelector('.choice-card').onclick = () => finish(-1);
-      /* 自动隐藏弹窗，让骰面立即可点（比手动按「−」更顺手） */
+      /* Hide the dialog automatically so the faces become clickable right away */
       autoHideModal();
     });
   }
@@ -1926,20 +2186,20 @@ class HumanAgent {
   askHero(legal, game) {
     return new Promise((resolve) => {
       const rows = legal.map((i) => {
-        if (i === 15) return `<div class="hero-card-item" data-i="15"><b>❌ 取消购买</b></div>`;
+        if (i === 15) return `<div class="hero-card-item" data-i="15"><b>❌ Cancel purchase</b></div>`;
         const h = HEROES[i];
-        const cost = Object.entries(h.cost).map(([k, v]) => `${v}${k === 'red' ? '红' : '蓝'}`).join(' + ');
+        const cost = Object.entries(h.cost).map(([k, v]) => `${v} ${k === 'red' ? 'red' : 'blue'}`).join(' + ');
         const eff = {
-          support: '支援型：每回合可发动一次', immediate: '立即效果：购买后立刻结算',
-          none: '无效果（纯分数）',
+          support: 'Support: can be used once per turn', immediate: 'Immediate: takes effect on purchase',
+          none: 'No effect (points only)',
         }[h.effect];
         const can = game.canPay(h.cost);
         return `<div class="hero-card-item ${can ? '' : 'disabled'}" data-i="${i}">
           <div style="min-width:96px"><b>${h.name}</b><div class="hero-desc">⭐${h.score}</div></div>
-          <div><div>费用：${cost}</div><div class="hero-desc">${eff}</div></div></div>`;
+          <div><div>Cost: ${cost}</div><div class="hero-desc">${eff}</div></div></div>`;
       }).join('');
-      const ov = showModal(`<h3>🦸 购买英雄</h3>
-        <div class="hint">当前红 ${game.red}／${game.redCap}，蓝 ${game.blue}／${game.blueCap}</div>
+      const ov = showModal(`<h3>🦸 Buy a Hero</h3>
+        <div class="hint">You have ${game.red}/${game.redCap} red and ${game.blue}/${game.blueCap} blue</div>
         <div class="hero-list">${rows}</div>`);
       ov.querySelectorAll('.hero-card-item').forEach((el) => {
         el.onclick = () => { const i = +el.dataset.i; closeModals(); resolve(i); };
@@ -1950,19 +2210,19 @@ class HumanAgent {
   askSupport(legal, game) {
     return new Promise((resolve) => {
       const desc = {
-        '长老': '支付 3 金币 → 获得 4 分',
-        '银鹿': '选择一侧骰子单独投掷一次',
-        '猫头鹰': '三选一获得 1 红 / 1 蓝 / 1 金币',
+        'The Elder': 'Pay 3 coins -> gain 4 points',
+        'The Silver Hind': 'Roll one die of your choice once',
+        "The Guardian's Owl": 'Take 1 red, 1 blue or 1 coin',
       };
       const cards = legal.map((i) => {
-        if (i === 3) return `<div class="choice-card" data-i="3"><div class="big">⏭️ 结束支援</div><div class="sub">进入主要行动阶段</div></div>`;
+        if (i === 3) return `<div class="choice-card" data-i="3"><div class="big">⏭️ End Support</div><div class="sub">Continue to the Main Action phase</div></div>`;
         const n = SUPPORT_HEROES[i];
-        const dis = (n === '长老' && game.coin < 3);
+        const dis = (n === 'The Elder' && game.coin < 3);
         return `<div class="choice-card ${dis ? 'disabled' : ''}" data-i="${i}">
-          <div class="big">✨ ${n}</div><div class="sub">${desc[n]}<br>剩余次数：${game.supportPool.filter(x => x === n).length}</div></div>`;
+          <div class="big">✨ ${n}</div><div class="sub">${desc[n]}<br>Uses left: ${game.supportPool.filter(x => x === n).length}</div></div>`;
       }).join('');
-      const ov = showModal(`<h3>🛡️ 支援阶段</h3>
-        <div class="hint">可任意顺序发动支援能力，也可以直接结束</div>
+      const ov = showModal(`<h3>🛡️ Support Phase</h3>
+        <div class="hint">Use support abilities in any order, or end the phase</div>
         <div class="choices">${cards}</div>`);
       ov.querySelectorAll('.choice-card').forEach((el) => {
         el.onclick = () => { const i = +el.dataset.i; closeModals(); resolve(i); };
@@ -1972,11 +2232,11 @@ class HumanAgent {
 
   askDie(game) {
     return new Promise((resolve) => {
-      const ov = showModal(`<h3>🎲 选择要单独投掷的骰子</h3>
-        <div class="hint">单独投掷会立刻结算抽到的骰面</div>
+      const ov = showModal(`<h3>🎲 Choose a die to roll alone</h3>
+        <div class="hint">The face it lands on resolves immediately</div>
         <div class="choices">
-          <div class="choice-card" data-i="0"><div class="big">左骰子</div><div class="sub">${game.left.join(' / ')}</div></div>
-          <div class="choice-card" data-i="1"><div class="big">右骰子</div><div class="sub">${game.right.join(' / ')}</div></div>
+          <div class="choice-card" data-i="0"><div class="big">Left die</div><div class="sub">${game.left.join(' / ')}</div></div>
+          <div class="choice-card" data-i="1"><div class="big">Right die</div><div class="sub">${game.right.join(' / ')}</div></div>
         </div>`);
       ov.querySelectorAll('.choice-card').forEach((el) => {
         el.onclick = () => { const i = +el.dataset.i; closeModals(); resolve(i); };
@@ -1986,11 +2246,11 @@ class HumanAgent {
 
   askOwl() {
     return new Promise((resolve) => {
-      const ov = showModal(`<h3>🦉 猫头鹰：三选一</h3>
+      const ov = showModal(`<h3>🦉 The Guardian's Owl: Choose One</h3>
         <div class="choices">
-          <div class="choice-card" data-i="0"><div class="big">🔴 1 红</div></div>
-          <div class="choice-card" data-i="1"><div class="big">🔵 1 蓝</div></div>
-          <div class="choice-card" data-i="2"><div class="big">💰 1 金币</div></div>
+          <div class="choice-card" data-i="0"><div class="big">🔴 1 Red</div></div>
+          <div class="choice-card" data-i="1"><div class="big">🔵 1 Blue</div></div>
+          <div class="choice-card" data-i="2"><div class="big">💰 1 Coin</div></div>
         </div>`);
       ov.querySelectorAll('.choice-card').forEach((el) => {
         el.onclick = () => { resolve(+el.dataset.i); closeModals(); };
@@ -2009,9 +2269,9 @@ class HumanAgent {
         if (o[2]) parts.push(`<span style="color:var(--gold)">💰 ${o[2]}</span>`);
         return `<div class="choice-card" data-i="${i}"><div class="big">${parts.join(' + ')}</div></div>`;
       }).join('');
-      const mult = ctx.mult > 1 ? `（×${ctx.mult} 三倍）` : '';
-      const ov = showModal(`<h3>🎯 三选一骰面${mult}</h3>
-        <div class="hint">选择本次获得的资源</div><div class="choices">${cards}</div>`);
+      const mult = ctx.mult > 1 ? ` (×${ctx.mult} Triple)` : '';
+      const ov = showModal(`<h3>🎯 Choose One face${mult}</h3>
+        <div class="hint">Pick the resources you gain</div><div class="choices">${cards}</div>`);
       ov.querySelectorAll('.choice-card').forEach((el) => {
         el.onclick = () => { resolve(+el.dataset.i); closeModals(); };
       });
@@ -2030,8 +2290,8 @@ class HumanAgent {
           <span class="hammer-plus">＋</span>
           <span class="hammer-coin">💰 +${cv - i}</span></div>`);
       }
-      const ov = showModal(`<h3>⛏️ 金币转化为锤子进度</h3>
-        <div class="hint">本次获得 ${cv} 金币；轨道可再容纳 ${maxConv} 点。每满 15 点立刻得分（15→10分，30→15分）</div>
+      const ov = showModal(`<h3>⛏️ Convert coins into hammer progress</h3>
+        <div class="hint">You gained ${cv} coin(s); the track can still take ${maxConv}. Every 15 points of track scores at once (15 -> 10 pts, 30 -> 15 pts)</div>
         <div class="hammer-choices">${cards.join('')}</div>`);
       ov.querySelectorAll('.hammer-choice-card').forEach((el) => {
         el.onclick = () => { resolve(+el.dataset.i); closeModals(); };
@@ -2041,10 +2301,10 @@ class HumanAgent {
 
   askHelm(game) {
     return new Promise((resolve) => {
-      const ov = showModal(`<h3>🪖 隐形头盔：选择要改成三倍(X3)的骰面位</h3>
-        <div class="hint">已自动隐藏弹窗：请直接点击要改的骰面（可点左下角「↖ 恢复选项」看说明）</div>
+      const ov = showModal(`<h3>🪖 Helmet of Invisibility: choose the face to turn into Triple (×3)</h3>
+        <div class="hint">The dialog hid itself — click the face you want to change ("↖ Show options" brings the list back).</div>
         <div class="choices"><div class="choice-card" data-i="-1">
-          <div class="big">↩ 看看选项</div><div class="sub">恢复弹窗</div></div></div>`);
+          <div class="big">↩ Back to the options</div><div class="sub">Restore the dialog</div></div></div>`);
       let done = false;
       const finish = (i) => {
         if (done) return;
@@ -2063,7 +2323,7 @@ class HumanAgent {
   }
 }
 
-/* ------------------------------ 对局驱动 ------------------------------ */
+/* ------------------------------ Game drivers ------------------------------ */
 function resetScreen() {
   $('logBody').innerHTML = '';
   $('aiBanner').classList.add('hidden');
@@ -2080,8 +2340,10 @@ async function startHumanGame() {
   $('settleScreen').classList.add('hidden');
   $('gameScreen').classList.remove('hidden');
 
-  /* 人类场景：牌堆由 scenarios.json 固定；投掷序列预生成（600 次足够覆盖英雄/支援的额外投掷）。
-     第 0 条为占位洗牌记录（构造 Game 时 reset 会消费它；play(startTurn=1) 不再重复 reset）。 */
+  /* Human scenarios: the deck comes from scenarios.json and the roll sequence is
+     pre-generated (600 draws comfortably covers hero/support extra rolls). Entry 0 is a
+     placeholder shuffle record: the Game constructor consumes it, and play(startTurn=1)
+     does not reset again. */
   const draws = [['s', 12, scenario.left.concat(scenario.right)]]
     .concat(scenario.rolls.map((v) => ['i', 6, v]));
   const game = new Game(draws, { left: scenario.left, right: scenario.right, log: false,
@@ -2089,14 +2351,14 @@ async function startHumanGame() {
   APP.game = game;
   APP.running = true;
   const agent = new HumanAgent((dtype, action, g) => {
-    logLine(`🧑 你选择：${actionLabel(dtype, action, g.ctx, g)}`, '');
+    logLine(`🧑 You chose: ${actionLabel(dtype, action, g.ctx, g)}`, '');
   });
   renderStatus();
-  toast('人类游玩开始：完成 9 个回合');
+  toast('Human play started — finish all 9 turns');
   try {
-    await game.play(agent, 1, {   // startTurn=1：复用构造函数里的 reset
-      onEvent: async (text, g) => {        // 投掷节奏：每次投掷后停 0.7 秒
-        const m = /第(\d+)次投掷/.exec(text);
+    await game.play(agent, 1, {   // startTurn=1: reuse the reset done by the constructor
+      onEvent: async (text, g) => {        // pacing: pause 0.7 s after every roll
+        const m = /Roll (\\d+)/.exec(text);
         if (!m) return;
         highlightRecentRoll(g);
         await paceWait('roll');
@@ -2106,12 +2368,12 @@ async function startHumanGame() {
     });
   } catch (e) {
     console.error(e);
-    toast('游戏中出现异常：' + e.message);
+    toast('Something went wrong during the game: ' + e.message);
   }
   APP.running = false;
   clearRollHighlight();
   await showSettle(game, game.score + game.heroesBought.reduce((s, h) => s + HERO_SCORE[h], 0),
-    { mode: '人类游玩' });
+    { mode: 'Human Play' });
 }
 
 async function startAIDemo() {
@@ -2123,8 +2385,8 @@ async function startAIDemo() {
   $('settleScreen').classList.add('hidden');
   $('gameScreen').classList.remove('hidden');
 
-  /* 与人类游玩同构：第 0 条为占位洗牌记录（构造函数消费一次），
-     play(startTurn=1) 不再重复 reset */
+  /* Same shape as human play: entry 0 is a placeholder shuffle record consumed by the
+     constructor, and play(startTurn=1) does not reset again. */
   const draws = [['s', 12, sc.left.concat(sc.right)]]
     .concat(sc.rolls.map((v) => ['i', 6, v]));
   const game = new Game(draws, { left: sc.left, right: sc.right, log: false,
@@ -2133,9 +2395,14 @@ async function startAIDemo() {
 
   const depth = APP.searchDepth || 12;
   const topk = APP.searchTopk || 4;
-  const forceGreedy = APP.compliantMode !== false;   // 默认合规模式：纯策略网 argmax
+  const forceGreedy = APP.compliantMode !== false;   // compliant by default: plain policy argmax
+  /* The second half of the delivered configuration: the deterministic rule repair layer
+     R1-R4 (repair.js). It only reads the current observable state, so it is compatible with
+     compliant mode, and every fix is written to the game log for inspection. */
+  const repairLayer = (APP.repairRules === false) ? null : new RepairLayer({ which: 'all' });
+  APP.repairLayer = repairLayer;
   const agent = new SearchAgent(APP.weights, {
-    depth, topk, forceGreedy,
+    depth, topk, forceGreedy, repair: repairLayer,
     onDecision: async (dtype, vec, mask, g) => {
       const ev = agent.lastEval || { candidates: [] };
       let detail = '';
@@ -2145,39 +2412,39 @@ async function startAIDemo() {
         const [off] = SEG_OFFSET[dtype];
         const rows = ev.candidates.slice().sort((a, b) => b.value - a.value).map((c) =>
           `${c.action === ev.action ? '<b>' : ''}${actionLabel(dtype, c.action, g.ctx, g)}`
-          + ` → 估值 <b>${c.value.toFixed(1)}</b>（策略概率 ${(probs[off + c.action] * 100).toFixed(1)}%）`
+          + ` → value <b>${c.value.toFixed(1)}</b> (policy prob ${(probs[off + c.action] * 100).toFixed(1)}%)`
           + `${c.action === ev.action ? '</b>' : ''}`);
-        detail = `🔎 现场搜索了 ${ev.candidates.length} 个候选（depth ${depth} × top-${topk}，`
-          + `累计 ${agent.nSim} 次模拟）：<br>` + rows.join('<br>');
+        detail = `🔎 Searched ${ev.candidates.length} candidates live (depth ${depth} x top-${topk}, `
+          + `${agent.nSim} simulations so far):<br>` + rows.join('<br>');
       } else if (forceGreedy) {
         const { logits } = policyForward(APP.weights, vec);
         const probs = maskedProbs(logits, mask);
         const ms = APP.liveAgent && APP.liveAgent.greedy
           ? (APP.liveAgent.greedy.totalMs / Math.max(1, APP.liveAgent.greedy.nDecisions)) : 0;
-        detail = `✅ 合规模式：仅由策略网读当前可观测状态做 argmax`
-          + `（无分支模拟、不读未来骰子）`
-          + ` ｜ 本步策略概率 <b>${(probs[ev.action + SEG_OFFSET[dtype][0]] * 100).toFixed(1)}%</b>`
-          + ` ｜ 单步实时推理 <b>${ms.toFixed(0)} ms</b>（平均）`;
+        detail = `✅ Compliant mode: a plain argmax over the policy net's read of the current observable state`
+          + ` (no branch simulation, no peeking at future dice)`
+          + `  |  policy prob <b>${(probs[ev.action + SEG_OFFSET[dtype][0]] * 100).toFixed(1)}%</b>`
+          + `  |  live inference <b>${ms.toFixed(0)} ms</b> (avg)`;
       } else {
         const vLeaf = valueForward(APP.weights, vec);
-        detail = `战术决策由策略网直接给出 ｜ 价值网 V(s) ≈ <b>${vLeaf.toFixed(1)}</b> 分`;
+        detail = `The policy net picks this decision directly  |  value net V(s) ≈ <b>${vLeaf.toFixed(1)}</b> pts`;
       }
       const label = actionLabel(dtype, ev.action, g.ctx, g);
       showBanner(TYPE_LABEL[dtype] || dtype, label, detail);
-      logLine(`🤖 AI（${TYPE_LABEL[dtype] || dtype}）：${label}`, 'ai-line');
+      logLine(`🤖 AI (${TYPE_LABEL[dtype] || dtype}): ${label}`, 'ai-line');
       await waitBanner();
     },
-    onSlow: (ms) => toast(`本步搜索较慢（${(ms / 1000).toFixed(1)} 秒），已自动降低等待`, 2600),
+    onSlow: (ms) => toast(`This search took ${(ms / 1000).toFixed(1)} s — waits were shortened automatically`, 2600),
   });
 
   renderStatus();
-  toast(`AI 实时演示开始：全新随机局面（第 ${sc.id + 1} 号盘）`);
-  APP.liveAgent = agent;            // 便于自检/调试查看搜索统计
+  toast(`AI demo started — fresh random board (#${sc.id + 1})`);
+  APP.liveAgent = agent;            // exposed for the self-check and debugging
   try {
-    await game.play(agent, 1, {     // startTurn=1：复用构造函数里的 reset（不再消费随机流）
-      onEvent: async (text, g) => {      // 掷骰 / 阶段切换的节奏
+    await game.play(agent, 1, {     // startTurn=1: reuse the constructor's reset (no extra stream use)
+      onEvent: async (text, g) => {      // pacing for rolls and phase changes
         if (text.startsWith('════')) { await paceWait('turnStart'); return; }
-        const m = /第(\d+)次投掷/.exec(text);
+        const m = /Roll (\\d+)/.exec(text);
         if (m) {
           highlightRecentRoll(g);
           await paceWait(m[1] === '2' ? 'halfTurn' : 'roll');
@@ -2193,18 +2460,19 @@ async function startAIDemo() {
     });
   } catch (e) {
     console.error(e);
-    toast('AI 演示出现异常：' + e.message);
+    toast('Something went wrong in the AI demo: ' + e.message);
   }
   APP.running = false;
   clearRollHighlight();
   const total = game.score + game.heroesBought.reduce((s, h) => s + HERO_SCORE[h], 0);
   await showSettle(game, total, {
-    mode: 'AI 实时演示', live: true,
+    mode: 'AI Live Demo', live: true,
     pieces: game.nDecisions, sims: agent.nSim,
   });
 }
 
-/* AI 决策横幅：保证每条横幅至少完整展示一段时间（避免连续决策把横幅瞬间刷掉） */
+/* AI decision banner: keep every banner on screen long enough to be read, so rapid
+   consecutive decisions cannot flicker past it */
 let BANNER_SHOWN_AT = 0;
 let LAST_BANNER_TEXT = '';
 
@@ -2218,62 +2486,64 @@ function showBanner(type, action, detail) {
 }
 function hideBanner() { $('aiBanner').classList.add('hidden'); }
 
-/** 横幅展示节奏：标准档每条停留 3 秒（×速度倍率），多个决策连发时每条都完整可见 */
+/** Banner pacing: 3 s per banner on the standard setting (scaled by speed), so every
+    decision of a burst stays fully visible */
 async function waitBanner(holdMs) {
   const hold = (holdMs || PACE.decision) * speedFactor();
   const shownFor = Date.now() - BANNER_SHOWN_AT;
   if (shownFor < hold) await sleep(hold - shownFor);
   hideBanner();
-  await sleep(200 * speedFactor());     // 收起后留出一点间隔，视觉上更清楚
+  await sleep(200 * speedFactor());     // a short gap after it collapses reads better
 }
 
-/* ------------------------------ 结算界面 ------------------------------ */
+/* ------------------------------ Results screen ------------------------------ */
 async function showSettle(game, total, opts) {
   APP.lastSummary = { game, total, opts };
   $('gameScreen').classList.add('hidden');
   $('settleScreen').classList.remove('hidden');
   const heroTotal = game.heroesBought.reduce((s, h) => s + HERO_SCORE[h], 0);
-  $('settleTitle').textContent = `🏁 ${opts.mode} · 终局结算`;
+  $('settleTitle').textContent = `🏁 ${opts.mode} · Final Results`;
   $('settleTotal').textContent = total;
-  $('settleFormula').innerHTML = `游戏过程分 <b>${game.score}</b> ＋ 英雄分 <b>${heroTotal}</b>`
-    + `　（共 ${game.heroesBought.length} 个英雄，9 个回合）`;
+  $('settleFormula').innerHTML = `Game points <b>${game.score}</b> + heroes <b>${heroTotal}</b>`
+    + `　(${game.heroesBought.length} heroes over 9 turns)`;
   const cell = (label, value, color) =>
-    `<div class="resource-item" style="background:#16233a;color:${color || '#dfe9f3'}">${label}：<b>${value}</b></div>`;
+    `<div class="resource-item" style="background:#16233a;color:${color || '#dfe9f3'}">${label}: <b>${value}</b></div>`;
   $('settleGrid').innerHTML = [
-    cell('🔴 红色', `${game.red}/${game.redCap}`, 'var(--red-resource)'),
-    cell('🔵 蓝色', `${game.blue}/${game.blueCap}`, '#8098e0'),
-    cell('💰 金币', `${game.coin}/${game.coinCap}`, 'var(--gold)'),
-    game.hammerCap > 0 ? cell('🔨 锤子', `${game.hammerTrack}/${game.hammerCap}`, '#c0a0d0') : '',
-    cell('⭐ 过程分', game.score, 'var(--score-green-light)'),
+    cell('🔴 Red', `${game.red}/${game.redCap}`, 'var(--red-resource)'),
+    cell('🔵 Blue', `${game.blue}/${game.blueCap}`, '#8098e0'),
+    cell('💰 Coins', `${game.coin}/${game.coinCap}`, 'var(--gold)'),
+    game.hammerCap > 0 ? cell('🔨 Hammer', `${game.hammerTrack}/${game.hammerCap}`, '#c0a0d0') : '',
+    cell('⭐ Game points', game.score, 'var(--score-green-light)'),
   ].join('');
   const heroCounts = {};
   for (const h of game.heroesBought) heroCounts[h] = (heroCounts[h] || 0) + 1;
-  $('settleHeroes').innerHTML = `🎲 最终骰面：左 [${game.left.join(' | ')}]　右 [${game.right.join(' | ')}]<br>`
-    + `🏆 已购英雄：${Object.keys(heroCounts).length
-      ? Object.entries(heroCounts).map(([n, c]) => `${n}${c > 1 ? '×' + c : ''}(⭐${HERO_SCORE[n] * c})`).join('、')
-      : '无'}`;
+  $('settleHeroes').innerHTML = `🎲 Final board — left [${game.left.join(' | ')}]　right [${game.right.join(' | ')}]<br>`
+    + `🏆 Heroes bought: ${Object.keys(heroCounts).length
+      ? Object.entries(heroCounts).map(([n, c]) => `${n}${c > 1 ? '×' + c : ''}(⭐${HERO_SCORE[n] * c})`).join(', ')
+      : 'none'}`;
   const cmp = [
-    `本局：<b>${total}</b> 分`,
-    `交付模型 v16（合规贪心）跨种子均值 <b>${STATS.aiCompliantMean}</b>`
-      + `（${STATS.aiCompliantN} 局配对，相对旧交付 ${STATS.oldDeliverMean} 为 `
-      + `<b>${STATS.aiCompliantDiff}</b>，t=${STATS.aiCompliantT}）`,
-    `人类专家 ${STATS.humanExpertN} 局均值 ${STATS.humanExpert}　·　启发式基线 ${STATS.heuristic}　·　随机基线 ${STATS.random}`,
+    `This game: <b>${total}</b> points`,
+    `Delivered model (compliant greedy) cross-seed mean <b>${STATS.aiCompliantMean}</b>`
+      + ` (${STATS.aiCompliantN} paired games; versus the previous delivery ${STATS.oldDeliverMean} that is `
+      + `<b>${STATS.aiCompliantDiff}</b>, t = ${STATS.aiCompliantT})`,
+    `Human expert mean over ${STATS.humanExpertN} games: ${STATS.humanExpert}　·　heuristic ${STATS.heuristic}　·　random ${STATS.random}`,
   ];
   if (opts.live) {
     const g = APP.liveAgent && APP.liveAgent.greedy;
     const avgMs = g && g.nDecisions ? (g.totalMs / g.nDecisions) : 0;
-    cmp.push(`本局为 **实时推理**：AI 面对全新随机局面，由策略网读当前可观测状态`
-      + `逐决策现场前向（int8 权重反量化为 float32，全部在浏览器内完成，无回放、无联网），`
-      + `共 <b>${opts.pieces}</b> 个决策，平均 <b>${avgMs.toFixed(0)} ms/步</b>`
-      + `（合计 ${(g ? g.totalMs : 0)} ms）`);
+    cmp.push(`This game was **inferred live**: the AI faced a brand-new random board and the`
+      + ` policy net read the current observable state at every decision (int8 weights`
+      + ` dequantized to float32, all inside the browser — no replay, no network),`
+      + ` <b>${opts.pieces}</b> decisions, <b>${avgMs.toFixed(0)} ms/step</b> on average`
+      + ` (${(g ? g.totalMs : 0)} ms total).`);
   } else if (opts.recorded != null) {
-    cmp.push(`本局离线评估成绩：<b>${opts.recorded}</b> 分`
-      + (total === opts.recorded ? '（与网页端复现完全一致 ✅）' : `（网页端复现 ${total}）`));
+    cmp.push(`Offline reference score for this game: <b>${opts.recorded}</b> points`
+      + (total === opts.recorded ? ' (reproduced exactly in the browser ✅)' : ` (browser reproduced ${total})`));
   }
   $('settleCompare').innerHTML = cmp.join('<br>');
 }
 
-/* ------------------------------ 菜单与自检 ------------------------------ */
+/* ------------------------------ Menu and self-check ------------------------------ */
 async function init() {
   const E = window.__DSH_EMBED__;
   APP.scenarios = (E && E.scenarios && E.scenarios.scenarios) || [];
@@ -2281,7 +2551,8 @@ async function init() {
   const demo = (E && E.demoGames) || {};
   APP.searchDepth = (demo.search && demo.search.depth) || 12;
   APP.searchTopk = (demo.search && demo.search.topk) || 4;
-  /* AI 实时演示用的随机场景（离线版从内嵌数据取；静态目录版尝试读取 JSON） */
+  /* Random scenarios for the live AI demo (the offline build reads embedded data,
+     the served build fetches the JSON files) */
   APP.aiScenarios = [];
   if (typeof window !== 'undefined' && window.__DSH_EMBED__ && window.__DSH_EMBED__.aiScenarios) {
     APP.aiScenarios = window.__DSH_EMBED__.aiScenarios.scenarios || [];
@@ -2291,19 +2562,19 @@ async function init() {
       APP.aiScenarios = ai.scenarios || [];
     } catch (e) { APP.aiScenarios = []; }
   }
-  $('btnHuman').onclick = () => startHumanGame().catch((e) => toast('启动失败：' + e.message));
-  $('btnAI').onclick = () => startAIDemo().catch((e) => toast('启动失败：' + e.message));
+  $('btnHuman').onclick = () => startHumanGame().catch((e) => toast('Could not start: ' + e.message));
+  $('btnAI').onclick = () => startAIDemo().catch((e) => toast('Could not start: ' + e.message));
   $('btnQuit').onclick = () => backToMenu();
   $('btnBackMenu').onclick = () => backToMenu();
   $('btnExplain').onclick = () => $('explainBox').classList.toggle('hidden');
-  $('btnCheck').classList.add('hidden');       // 离线版仅面向展示，隐藏开发者自检
+  $('btnCheck').classList.add('hidden');       // the offline build is a demo, so hide the developer self-check button
   $('btnCheck').onclick = () => runSelfCheck();
-  /* 演示速度切换（两种模式都生效） */
+  /* Speed switch (applies to both modes) */
   const setSpeed = (v, btn) => {
     SPEED = v;
     ['spdSlow', 'spdNormal', 'spdFast'].forEach((id) => $(id).classList.remove('active'));
     $(btn).classList.add('active');
-    toast(v >= 2 ? '演示速度：快（×0.6 等待）' : v <= 0.5 ? '演示速度：慢（×1.6 等待）' : '演示速度：标准');
+    toast(v >= 2 ? 'Speed: fast (x0.6 waits)' : v <= 0.5 ? 'Speed: slow (x1.6 waits)' : 'Speed: standard');
   };
   $('spdSlow').onclick = () => setSpeed(0.5, 'spdSlow');
   $('spdNormal').onclick = () => setSpeed(1, 'spdNormal');
@@ -2311,49 +2582,52 @@ async function init() {
 }
 
 function backToMenu() {
-  if (APP.running) { toast('对局仍在进行，已中止'); APP.running = false; }
+  if (APP.running) { toast('A game was in progress — stopped it'); APP.running = false; }
   hideBanner(); closeModals(); setSelectableMode(false, null); clearRollHighlight();
   $('gameScreen').classList.add('hidden');
   $('settleScreen').classList.add('hidden');
   $('menuScreen').classList.remove('hidden');
 }
 
-/* 暴露应用状态（供自检脚本/调试查看；不影响正常使用） */
+/* Expose the app state for the self-check scripts and debugging; normal play is unaffected */
 window.__APP = APP;
 
 /**
- * 自检：验证「引擎保真」+「当前模型确定性与实时推理」
+ * Self-check: engine fidelity + determinism and live-inference cost of the current model.
  *
- * ⚠️ 两部分要分清：
- *   ① 引擎保真 —— 重放 `demo_games.json` 里**v9 时代录制**的决策序列，
- *      校验网页引擎能否复现当年的总分。这验证的是**引擎**（game.js），
- *      与当前模型的强弱无关，所以标签里会写清"v9 录制"。
- *   ② 模型自检 —— 用**当前加载的模型**在固定场景上跑合规贪心两遍：
- *      两次决策序列必须完全一致（确定性）；并报告单步推理耗时。
+ * ⚠️ Two different things — do not mix them up:
+ *   ① Engine fidelity — replays the decision sequences **recorded back in the v9 era**
+ *      from `demo_games.json` and checks that the browser engine reproduces those totals.
+ *      That validates the *engine* (game.js), independent of how strong the current model
+ *      is, which is why the labels say "v9 recording".
+ *   ② Model check — runs the **currently loaded model** through compliant greedy twice on
+ *      a fixed scenario: the two decision sequences must be identical (determinism), and
+ *      the per-step inference time is reported.
  */
 async function runSelfCheck() {
   const box = $('checkBox');
   box.classList.remove('hidden');
-  box.innerHTML = '<h3>🔍 引擎与模型自检</h3><p>正在自检…</p>';
+  box.innerHTML = '<h3>🔍 Engine and Model Self-Check</h3><p>Running…</p>';
   APP.weights = APP.weights || await loadWeights();
   const lines = [];
 
-  /* ① 引擎保真：重放 v9 录制决策 */
-  lines.push('<b>① 引擎保真</b>（重放下面的对局是 <b>v9 时代录制</b>的决策，只校验引擎）');
+  /* ① Engine fidelity: replay the v9-recorded decisions */
+  lines.push('<b>① Engine fidelity</b> — these games replay decisions <b>recorded in the v9 era</b> and only validate the engine');
   for (const demo of APP.demos.slice(0, 2)) {
     const decisions = demo.decisions.map((d) => ({ type: d.type, action: d.action }));
     const game = new Game(demo.draws, { log: false });
     const agent = new ScriptedAgent(decisions, { strict: true });
     const total = await game.play(agent);
     const ok = total === demo.total;
-    lines.push(`　第 ${demo.id + 1} 局：v9 录制 ${demo.total} / 网页重放 ${total} → `
-      + `${ok ? '✅ 一致' : '❌ 不一致'}（${decisions.length} 个决策）`);
+    lines.push(`　Game ${demo.id + 1}: v9 recording ${demo.total} / browser replay ${total} → `
+      + `${ok ? '✅ match' : '❌ mismatch'} (${decisions.length} decisions)`);
   }
 
-  /* ② 当前模型：确定性 + 实时推理耗时
-     注意：scenarios.json 的 rolls 是**扁平整数**，必须包成结构化随机流
-     （第 0 条是占位洗牌记录，后续 ['i',6,v]）—— 直接用 rolls 构造 Game 会报
-     "随机数流类型不符"（踩坑记录 QQ-052）。 */
+  /* ② Current model: determinism + live inference cost.
+     Note: `rolls` in scenarios.json is a **flat list of integers** and has to be wrapped as
+     a structured draw stream (entry 0 is a placeholder shuffle record, then ['i',6,v]).
+     Building a Game straight from `rolls` fails with "draw-stream entry mismatch"
+     (pitfall log QQ-052). */
   const sc = (APP.scenarios && APP.scenarios[0]) || null;
   if (sc) {
     const mkDraws = () => [['s', 12, sc.left.concat(sc.right)]]
@@ -2375,25 +2649,25 @@ async function runSelfCheck() {
           return a;
         },
       };
-      await g.play(agent, 1);       // startTurn=1：不再重复消费占位洗牌记录
+      await g.play(agent, 1);       // startTurn=1: no second consume of the placeholder
       runs.push(seq.join(','));
     }
     const same = runs[0] === runs[1] && runs[0].length > 0;
-    lines.push('<b>② 当前模型</b>（合规贪心，只读当前可观测状态）');
-    lines.push(`　确定性：同一场景跑两遍 → ${same ? '✅ 决策序列完全一致' : '❌ 两次不同'}`
-      + `（${runs[0] ? runs[0].split(',').length : 0} 个决策）`);
-    lines.push(`　实时推理：${n} 次前向，平均 ${(ms / Math.max(1, n)).toFixed(1)} ms/步`);
+    lines.push('<b>② Current model</b> (compliant greedy; reads only the current observable state)');
+    lines.push(`　Determinism: same scenario twice → ${same ? '✅ identical decision sequence' : '❌ the two runs differ'}`
+      + ` (${runs[0] ? runs[0].split(',').length : 0} decisions)`);
+    lines.push(`　Live inference: ${n} forward passes, ${(ms / Math.max(1, n)).toFixed(1)} ms/step on average`);
   }
 
   const w = APP.weights.meta;
   const valDesc = w.value
     ? w.value.layers.map((l) => `${l.in}→${l.out}`).join(' → ')
-    : '未加载（合规模式不需要）';
-  box.innerHTML = `<h3>🔍 引擎与模型自检</h3>`
+    : 'not loaded (not needed in compliant mode)';
+  box.innerHTML = `<h3>🔍 Engine and Model Self-Check</h3>`
     + lines.map((l) => `<div>${l}</div>`).join('')
-    + `<div style="margin-top:8px;color:#9fb3c8">量化：${w.quant.type}　｜　`
-    + `策略网 ${w.policy.layers.map(l => `${l.in}→${l.out}`).join(' → ')}（hidden=${w.policy.hidden}）　｜　`
-    + `价值网 ${valDesc}　｜　模型来源 ${(w.source && w.source.policy) || '未知'}</div>`;
+    + `<div style="margin-top:8px;color:#9fb3c8">Quantization: ${w.quant.type}　|　`
+    + `Policy net ${w.policy.layers.map(l => `${l.in}→${l.out}`).join(' → ')} (hidden=${w.policy.hidden})　|　`
+    + `Value net ${valDesc}　|　model source ${(w.source && w.source.policy) || 'unknown'}</div>`;
 }
 
 init().catch((e) => {
@@ -2401,8 +2675,8 @@ init().catch((e) => {
   document.body.insertAdjacentHTML('beforeend',
     `<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
       background:#252540;color:#f88;font-size:1.1em;text-align:center;padding:30px">
-      加载失败：${e.message}<br><br>请通过本地静态服务器打开本页面
-      （例如在包目录执行 <code>python -m http.server 8000</code>，再访问 http://localhost:8000/）。
+      Load failed: ${e.message}<br><br>Open this page through a local static server
+      (for example run <code>python -m http.server 8000</code> in the package folder, then open http://localhost:8000/).
     </div>`);
 });
 
